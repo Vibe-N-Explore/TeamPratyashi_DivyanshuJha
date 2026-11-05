@@ -3,30 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SovereignChain — Institutional Operations Dashboard</title>
+    <title>SovereignChain // Project Sentinel — Security Operations Center</title>
     <style>
         :root {
-            --bg-base: #0a0b0d;
-            --bg-surface: #121418;
-            --bg-surface-elevated: #1a1d24;
-            --border-color: #262a36;
-            --border-highlight: #3a4052;
+            --bg-base: #07090e;
+            --bg-surface: #0e121a;
+            --bg-surface-elevated: #161c27;
+            --border-color: #1f2738;
+            --border-highlight: #2f3a52;
             
-            --text-primary: #f0f2f5;
-            --text-secondary: #8c96a8;
-            --text-muted: #5a6475;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #484f58;
             
             --accent-red: #c8102e;
-            --accent-red-dark: #8b0000;
-            --accent-red-glow: rgba(200, 16, 46, 0.25);
+            --accent-red-bright: #ff2a4b;
+            --accent-red-glow: rgba(200, 16, 46, 0.35);
+            --accent-blue: #388bfd;
+            --accent-cyan: #39c5cf;
             
-            --status-ok: #00e676;
-            --status-warn: #ffb300;
-            --status-error: #ff1744;
-            --status-info: #29b6f6;
+            --status-ok: #2ea043;
+            --status-ok-glow: rgba(46, 160, 67, 0.4);
+            --status-warn: #d29922;
+            --status-error: #f85149;
+            --status-error-glow: rgba(248, 81, 73, 0.4);
+            --status-info: #58a6ff;
             
-            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            --font-mono: "JetBrains Mono", "Fira Code", "Consolas", "Courier New", monospace;
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
         }
 
         * {
@@ -41,1073 +45,1610 @@
             font-family: var(--font-sans);
             font-size: 13px;
             line-height: 1.5;
-            overflow: hidden;
             height: 100vh;
             display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            user-select: none;
         }
 
-        /* Monospace Utilities */
         .mono { font-family: var(--font-mono); }
-        .hash-truncate {
-            font-family: var(--font-mono);
-            max-width: 140px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            display: inline-block;
-            vertical-align: bottom;
-        }
 
-        /* Sidebar Navigation */
-        #sidebar {
-            width: 240px;
-            background-color: var(--bg-surface);
-            border-right: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
-            z-index: 10;
-        }
-
-        .brand-header {
-            padding: 18px 20px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .brand-logo {
-            width: 14px;
-            height: 14px;
-            background-color: var(--accent-red);
-            box-shadow: 0 0 10px var(--accent-red);
-            border-radius: 2px;
-        }
-
-        .brand-title {
-            font-weight: 700;
-            font-size: 14px;
-            letter-spacing: 0.8px;
-            color: var(--text-primary);
-            text-transform: uppercase;
-        }
-
-        .nav-list {
-            list-style: none;
-            padding: 12px 0;
-            flex: 1;
-            overflow-y: auto;
-        }
-
-        .nav-item {
-            padding: 10px 20px;
-            color: var(--text-secondary);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-weight: 500;
-            transition: all 0.15s ease;
-            border-left: 3px solid transparent;
-        }
-
-        .nav-item:hover {
-            color: var(--text-primary);
-            background-color: rgba(255, 255, 255, 0.02);
-        }
-
-        .nav-item.active {
-            color: var(--text-primary);
-            background-color: rgba(200, 16, 46, 0.08);
-            border-left-color: var(--accent-red);
-        }
-
-        .nav-icon {
-            width: 16px;
-            text-align: center;
-            font-size: 14px;
-            opacity: 0.8;
-        }
-
-        .api-config-box {
-            padding: 16px;
-            border-top: 1px solid var(--border-color);
-            background-color: rgba(0, 0, 0, 0.2);
-        }
-
-        .api-config-title {
-            font-size: 11px;
-            text-transform: uppercase;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-
-        .api-input-group {
-            display: flex;
-            gap: 6px;
-        }
-
-        .api-input {
-            flex: 1;
-            background-color: var(--bg-base);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 6px 8px;
-            font-family: var(--font-mono);
-            font-size: 11px;
-            border-radius: 3px;
-            outline: none;
-        }
-
-        .api-input:focus {
-            border-color: var(--accent-red);
-        }
-
-        .btn-small {
-            background-color: var(--bg-surface-elevated);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 6px 10px;
-            font-size: 11px;
-            cursor: pointer;
-            border-radius: 3px;
-            font-weight: 500;
-            transition: background 0.15s;
-        }
-
-        .btn-small:hover {
-            background-color: var(--border-highlight);
-        }
-
-        /* Main Workspace */
-        #main-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            background-color: var(--bg-base);
-        }
-
-        /* Top Status Bar */
-        #top-bar {
-            height: 48px;
-            background-color: var(--bg-surface);
+        /* Top Institutional Header */
+        header {
+            height: 54px;
+            background: linear-gradient(180deg, #121622 0%, #0a0d14 100%);
             border-bottom: 1px solid var(--border-color);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 24px;
-            flex-shrink: 0;
+            padding: 0 20px;
+            z-index: 100;
         }
 
-        .status-indicators {
+        .brand-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            width: 28px;
+            height: 28px;
+            background: radial-gradient(circle, var(--accent-red-bright) 10%, var(--accent-red) 70%, transparent 100%);
+            border-radius: 4px;
+            border: 1px solid var(--accent-red);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 12px var(--accent-red-glow);
+        }
+
+        .brand-logo svg {
+            width: 16px;
+            height: 16px;
+            fill: #ffffff;
+        }
+
+        .brand-title {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-subtitle {
+            font-size: 11px;
+            color: var(--accent-red-bright);
+            letter-spacing: 1px;
+            background: rgba(200, 16, 46, 0.15);
+            border: 1px solid rgba(200, 16, 46, 0.3);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .header-meta {
             display: flex;
             align-items: center;
             gap: 20px;
         }
 
-        .indicator-item {
+        .live-indicator {
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 12px;
+            font-size: 11px;
+            font-family: var(--font-mono);
+            letter-spacing: 0.5px;
         }
 
-        .status-dot {
+        .pulse-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background-color: var(--text-muted);
+            background: var(--status-ok);
+            box-shadow: 0 0 8px var(--status-ok-glow);
+            animation: pulse-green 2s infinite ease-in-out;
         }
 
-        .status-dot.ok { background-color: var(--status-ok); box-shadow: 0 0 6px var(--status-ok); }
-        .status-dot.warn { background-color: var(--status-warn); box-shadow: 0 0 6px var(--status-warn); }
-        .status-dot.error { background-color: var(--status-error); box-shadow: 0 0 6px var(--status-error); }
+        @keyframes pulse-green {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.85); }
+        }
 
-        .refresh-info {
+        .pulse-dot.error {
+            background: var(--status-error);
+            box-shadow: 0 0 8px var(--status-error-glow);
+            animation: pulse-red 1s infinite;
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Layout Framework */
+        .soc-layout {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 54px);
+            overflow: hidden;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 250px;
+            background: var(--bg-surface);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .nav-section-title {
+            padding: 14px 16px 6px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--text-muted);
+            font-weight: 700;
+        }
+
+        .nav-item {
             display: flex;
             align-items: center;
             gap: 12px;
+            padding: 10px 16px;
             color: var(--text-secondary);
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            transition: all 0.15s ease;
+            font-weight: 500;
             font-size: 12px;
         }
 
-        .badge-stale {
-            background-color: rgba(255, 179, 0, 0.15);
-            color: var(--status-warn);
-            border: 1px solid rgba(255, 179, 0, 0.3);
-            padding: 2px 6px;
-            border-radius: 2px;
-            font-size: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-primary);
         }
 
-        /* Content Views */
-        #content-area {
+        .nav-item.active {
+            background: linear-gradient(90deg, rgba(200, 16, 46, 0.15) 0%, transparent 100%);
+            border-left-color: var(--accent-red-bright);
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .nav-item svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+            opacity: 0.8;
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            background: var(--bg-surface-elevated);
+            color: var(--text-muted);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-family: var(--font-mono);
+        }
+
+        .nav-badge.danger {
+            background: rgba(248, 81, 73, 0.2);
+            color: var(--status-error);
+            border: 1px solid rgba(248, 81, 73, 0.3);
+        }
+
+        /* Main View Workspace */
+        .workspace {
             flex: 1;
+            background: var(--bg-base);
             overflow-y: auto;
-            padding: 24px;
+            display: flex;
+            flex-direction: column;
             position: relative;
         }
 
         .view-panel {
             display: none;
+            padding: 24px 28px;
             flex-direction: column;
             gap: 20px;
+            min-height: 100%;
         }
 
         .view-panel.active {
             display: flex;
         }
 
-        .panel-title {
-            font-size: 18px;
-            font-weight: 600;
-            letter-spacing: 0.3px;
-            margin-bottom: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        /* Metric Grid & Cards */
-        .grid-4 {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-        }
-
-        .grid-2 {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-        }
-
-        .card {
-            background-color: var(--bg-surface);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            padding: 16px;
-        }
-
-        .card-header {
+        /* Common Page Header */
+        .page-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
+            align-items: flex-end;
             border-bottom: 1px solid var(--border-color);
+            padding-bottom: 14px;
         }
 
-        .card-title {
-            font-size: 11px;
-            text-transform: uppercase;
-            color: var(--text-secondary);
-            font-weight: 600;
+        .page-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffffff;
             letter-spacing: 0.5px;
         }
 
-        .metric-value {
-            font-size: 22px;
-            font-weight: 700;
-            font-family: var(--font-mono);
-            color: var(--text-primary);
+        .page-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 2px;
         }
 
-        .metric-sub {
+        /* Top Metric Cards Bar */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+        }
+
+        .kpi-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 14px 16px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+
+        .kpi-card:hover {
+            border-color: var(--border-highlight);
+        }
+
+        .kpi-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 100%;
+            background: var(--accent-red);
+        }
+
+        .kpi-card.blue::before { background: var(--accent-blue); }
+        .kpi-card.green::before { background: var(--status-ok); }
+        .kpi-card.warn::before { background: var(--status-warn); }
+
+        .kpi-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-secondary);
+        }
+
+        .kpi-val {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-top: 4px;
+            font-family: var(--font-mono);
+        }
+
+        .kpi-sub {
             font-size: 11px;
             color: var(--text-muted);
             margin-top: 4px;
         }
 
-        /* Tables */
-        .table-container {
-            background-color: var(--bg-surface);
+        /* Panels and Cards */
+        .soc-card {
+            background: var(--bg-surface);
             border: 1px solid var(--border-color);
-            border-radius: 4px;
+            border-radius: 6px;
             overflow: hidden;
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
+        .soc-card-header {
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
-        th {
-            background-color: rgba(255, 255, 255, 0.02);
-            color: var(--text-secondary);
+        .soc-card-title {
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .soc-card-body {
+            padding: 16px;
+        }
+
+        /* Topology Visualizer */
+        .topology-container {
+            width: 100%;
+            height: 380px;
+            background: radial-gradient(circle at center, #101626 0%, #080a10 70%);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .topology-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Status Pills & Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 2px 8px;
+            border-radius: 4px;
             font-size: 11px;
             font-weight: 600;
-            text-transform: uppercase;
-            padding: 10px 14px;
-            border-bottom: 1px solid var(--border-color);
+            font-family: var(--font-mono);
             letter-spacing: 0.5px;
-        }
-
-        td {
-            padding: 10px 14px;
-            border-bottom: 1px solid var(--border-color);
-            color: var(--text-primary);
-            font-size: 12px;
-        }
-
-        tr:last-child td {
-            border-bottom: none;
-        }
-
-        tr:hover td {
-            background-color: rgba(255, 255, 255, 0.015);
-        }
-
-        /* Badges & Pills */
-        .badge {
-            display: inline-block;
-            padding: 2px 7px;
-            border-radius: 3px;
-            font-size: 10px;
-            font-weight: 600;
-            font-family: var(--font-mono);
             text-transform: uppercase;
         }
 
-        .badge-success { background: rgba(0, 230, 118, 0.12); color: var(--status-ok); border: 1px solid rgba(0, 230, 118, 0.25); }
-        .badge-warning { background: rgba(255, 179, 0, 0.12); color: var(--status-warn); border: 1px solid rgba(255, 179, 0, 0.25); }
-        .badge-error { background: rgba(255, 23, 68, 0.12); color: var(--status-error); border: 1px solid rgba(255, 23, 68, 0.25); }
-        .badge-info { background: rgba(41, 182, 246, 0.12); color: var(--status-info); border: 1px solid rgba(41, 182, 246, 0.25); }
-
-        /* Filter Controls */
-        .filter-bar {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            background-color: var(--bg-surface);
-            padding: 12px 16px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
+        .badge-ok {
+            background: rgba(46, 160, 67, 0.15);
+            color: #3fb950;
+            border: 1px solid rgba(46, 160, 67, 0.3);
         }
 
-        .filter-input {
-            background-color: var(--bg-base);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 6px 10px;
+        .badge-warn {
+            background: rgba(210, 153, 34, 0.15);
+            color: #d29922;
+            border: 1px solid rgba(210, 153, 34, 0.3);
+        }
+
+        .badge-error {
+            background: rgba(248, 81, 73, 0.15);
+            color: #f85149;
+            border: 1px solid rgba(248, 81, 73, 0.3);
+        }
+
+        .badge-info {
+            background: rgba(56, 139, 253, 0.15);
+            color: #58a6ff;
+            border: 1px solid rgba(56, 139, 253, 0.3);
+        }
+
+        .badge-purple {
+            background: rgba(188, 140, 255, 0.15);
+            color: #d2a8ff;
+            border: 1px solid rgba(188, 140, 255, 0.3);
+        }
+
+        /* Tables */
+        .soc-table {
+            width: 100%;
+            border-collapse: collapse;
             font-size: 12px;
-            border-radius: 3px;
-            outline: none;
         }
 
-        .filter-input:focus {
-            border-color: var(--accent-red);
-        }
-
-        select.filter-input {
-            cursor: pointer;
-        }
-
-        /* Network Topology Canvas */
-        #topology-canvas-wrap {
-            width: 100%;
-            height: 420px;
-            background-color: var(--bg-surface);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            position: relative;
-        }
-
-        svg#topology-svg {
-            width: 100%;
-            height: 100%;
-        }
-
-        /* Modal / Inspector Drawer */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: rgba(0, 0, 0, 0.75);
-            z-index: 100;
-            justify-content: flex-end;
-        }
-
-        .modal-overlay.active {
-            display: flex;
-        }
-
-        .inspector-drawer {
-            width: 480px;
-            height: 100%;
-            background-color: var(--bg-surface);
-            border-left: 1px solid var(--border-color);
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            overflow-y: auto;
-        }
-
-        .drawer-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 12px;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
+        .soc-table th {
+            text-align: left;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.02);
             color: var(--text-secondary);
-            font-size: 18px;
-            cursor: pointer;
-        }
-
-        .close-btn:hover {
-            color: var(--text-primary);
-        }
-
-        .kv-pair {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            margin-bottom: 12px;
-        }
-
-        .kv-label {
-            font-size: 10px;
-            text-transform: uppercase;
-            color: var(--text-muted);
             font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 0.8px;
         }
 
-        .kv-value {
-            font-size: 12px;
-            font-family: var(--font-mono);
+        .soc-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(31, 39, 56, 0.5);
             color: var(--text-primary);
-            word-break: break-all;
-            background: var(--bg-base);
-            padding: 6px;
-            border-radius: 3px;
-            border: 1px solid var(--border-color);
         }
 
-        /* Unreachable Overlay */
-        #unreachable-banner {
-            display: none;
-            background-color: rgba(255, 23, 68, 0.15);
-            border: 1px solid var(--status-error);
-            color: #ff8a80;
-            padding: 12px 16px;
+        .soc-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Interactive Demo Controls */
+        .demo-bar {
+            background: var(--bg-surface-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .btn {
+            background: var(--bg-surface-elevated);
+            color: #ffffff;
+            border: 1px solid var(--border-highlight);
+            padding: 8px 16px;
             border-radius: 4px;
-            margin-bottom: 16px;
             font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            border-color: #58a6ff;
+            background: #1f2738;
+        }
+
+        .btn-danger {
+            background: var(--accent-red);
+            border-color: var(--accent-red-bright);
+        }
+
+        .btn-danger:hover {
+            background: #a00d24;
+            box-shadow: 0 0 10px var(--accent-red-glow);
+        }
+
+        .btn-success {
+            background: #238636;
+            border-color: #2ea043;
+        }
+
+        .btn-success:hover {
+            background: #2ea043;
+        }
+
+        /* Banner Result Callouts */
+        .result-banner {
+            padding: 16px 20px;
+            border-radius: 6px;
+            margin-top: 16px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        .result-banner.denied {
+            display: flex;
+            background: linear-gradient(90deg, rgba(200, 16, 46, 0.25) 0%, rgba(200, 16, 46, 0.05) 100%);
+            border: 1px solid var(--accent-red-bright);
+            color: #ff6b81;
+        }
+
+        .result-banner.approved {
+            display: flex;
+            background: linear-gradient(90deg, rgba(46, 160, 67, 0.25) 0%, rgba(46, 160, 67, 0.05) 100%);
+            border: 1px solid #3fb950;
+            color: #56d364;
+        }
+
+        .result-banner.escalated {
+            display: flex;
+            background: linear-gradient(90deg, rgba(210, 153, 34, 0.25) 0%, rgba(210, 153, 34, 0.05) 100%);
+            border: 1px solid #d29922;
+            color: #e3b341;
+        }
+
+        /* Execution Timeline Component */
+        .timeline-list {
+            list-style: none;
+            margin-top: 16px;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .timeline-list::before {
+            content: "";
+            position: absolute;
+            top: 8px;
+            bottom: 8px;
+            left: 7px;
+            width: 2px;
+            background: var(--border-color);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-bottom: 16px;
+        }
+
+        .timeline-item::before {
+            content: "";
+            position: absolute;
+            left: -17px;
+            top: 4px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            border: 2px solid var(--bg-surface);
+        }
+
+        .timeline-label {
+            font-weight: 600;
+            color: #ffffff;
+            font-size: 12px;
+        }
+
+        .timeline-desc {
+            color: var(--text-secondary);
+            font-size: 11px;
+            margin-top: 2px;
+        }
+
+        /* Filter & Search Bar */
+        .search-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 8px 12px;
+            color: var(--text-primary);
+            font-size: 12px;
+            width: 280px;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        /* Split 2-col Grid */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Sidebar Navigation -->
-    <div id="sidebar">
-        <div class="brand-header">
-            <div class="brand-logo"></div>
-            <div class="brand-title">SovereignChain</div>
-        </div>
-        <ul class="nav-list">
-            <li class="nav-item active" onclick="switchTab('overview', this)">
-                <span class="nav-icon">📊</span> Overview
-            </li>
-            <li class="nav-item" onclick="switchTab('topology', this)">
-                <span class="nav-icon">🌐</span> Network Topology
-            </li>
-            <li class="nav-item" onclick="switchTab('activity', this)">
-                <span class="nav-icon">⚡</span> Activity Feed
-            </li>
-            <li class="nav-item" onclick="switchTab('transfers', this)">
-                <span class="nav-icon">🔀</span> Cross-Chain Transfers
-            </li>
-            <li class="nav-item" onclick="switchTab('rates', this)">
-                <span class="nav-icon">💱</span> Exchange Rates
-            </li>
-            <li class="nav-item" onclick="switchTab('connector', this)">
-                <span class="nav-icon">⚙️</span> Connector Operations
-            </li>
-            <li class="nav-item" onclick="switchTab('diagnostics', this)">
-                <span class="nav-icon">🔍</span> System Diagnostics
-            </li>
-        </ul>
-
-        <div class="api-config-box">
-            <div class="api-config-title">API Endpoint Base</div>
-            <div class="api-input-group">
-                <input type="text" id="api-url-input" class="api-input" value="http://127.0.0.1:8080">
-                <button class="btn-small" onclick="updateApiBaseUrl()">Set</button>
+    <!-- Header -->
+    <header>
+        <div class="brand-group">
+            <div class="brand-logo">
+                <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l7 3.12v4.7c0 4.67-3.13 9.04-7 10.15-3.87-1.11-7-5.48-7-10.15V6.3l7-3.12zM11 7h2v6h-2zm0 8h2v2h-2z"/></svg>
             </div>
-        </div>
-    </div>
-
-    <!-- Main Workspace -->
-    <div id="main-container">
-        <!-- Top Status Bar -->
-        <div id="top-bar">
-            <div class="status-indicators">
-                <div class="indicator-item">
-                    <div id="dot-daemon" class="status-dot"></div>
-                    <span>Connector Daemon: <strong id="lbl-daemon-status">Checking...</strong></span>
-                </div>
-                <div class="indicator-item">
-                    <div id="dot-chain-a" class="status-dot"></div>
-                    <span>Chain A: <strong id="lbl-chain-a">--</strong></span>
-                </div>
-                <div class="indicator-item">
-                    <div id="dot-chain-b" class="status-dot"></div>
-                    <span>Chain B: <strong id="lbl-chain-b">--</strong></span>
-                </div>
-            </div>
-
-            <div class="refresh-info">
-                <span id="stale-badge" class="badge-stale" style="display: none;">STALE DATA</span>
-                <span>Updated: <strong id="lbl-last-updated" class="mono">Never</strong></span>
-                <button class="btn-small" onclick="triggerManualRefresh()">🔄 Refresh</button>
+            <div class="brand-title">
+                SovereignChain
+                <span class="brand-subtitle">Project Sentinel SOC</span>
             </div>
         </div>
 
-        <!-- Main View Content -->
-        <div id="content-area">
-            <div id="unreachable-banner">
-                <strong>Backend Unreachable:</strong> Unable to establish HTTP communication with SovereignChain daemon at <span id="unreachable-url" class="mono"></span>.
+        <div class="header-meta">
+            <div class="live-indicator">
+                <div class="pulse-dot" id="live-dot"></div>
+                <span id="live-status-text">CONNECTING TO SENTINEL ENGINE...</span>
+            </div>
+            <div class="mono" id="clock" style="font-size: 11px; color: var(--text-secondary);">--:--:-- UTC</div>
+        </div>
+    </header>
+
+    <!-- App Body -->
+    <div class="soc-layout">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="nav-section-title">Control & Intelligence</div>
+            <div class="nav-item active" onclick="switchView('overview')">
+                <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                Control Room
+            </div>
+            <div class="nav-item" onclick="switchView('network')">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                Network Topology
+                <span class="nav-badge" id="badge-node-count">6</span>
+            </div>
+            <div class="nav-item" onclick="switchView('tcb')">
+                <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                TCB Peer DAGs
+                <span class="nav-badge" id="badge-tcb-count">3 Peers</span>
+            </div>
+            <div class="nav-item" onclick="switchView('agent')">
+                <svg viewBox="0 0 24 24"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.38-1 1.72V7h4a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h4V5.72A2.001 2.001 0 0 1 10 4a2 2 0 0 1 2-2m-3 8a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1 1 1 0 0 0 1-1v-1a1 1 0 0 0-1-1m6 0a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1 1 1 0 0 0 1-1v-1a1 1 0 0 0-1-1m-7 5v2h8v-2H8z"/></svg>
+                AI Security Agent
             </div>
 
-            <!-- SECTION 1: OVERVIEW -->
+            <div class="nav-section-title">Sentinel Demonstrations</div>
+            <div class="nav-item" onclick="switchView('trust')">
+                <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3.45l8.27 14.3H3.73L12 5.45zM11 10v4h2v-4h-2zm0 6v2h2v-2h-2z"/></svg>
+                Unanimous Trust
+            </div>
+            <div class="nav-item" onclick="switchView('attack')">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                Attack Simulator
+            </div>
+            <div class="nav-item" onclick="switchView('self-healing')">
+                <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                Self-Healing
+            </div>
+
+            <div class="nav-section-title">Audit & Forensics</div>
+            <div class="nav-item" onclick="switchView('history')">
+                <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+                Security Memory
+                <span class="nav-badge" id="badge-history-count">--</span>
+            </div>
+            <div class="nav-item" onclick="switchView('incidents')">
+                <svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                Incident Centre
+                <span class="nav-badge danger" id="badge-incidents">0</span>
+            </div>
+        </nav>
+
+        <!-- Workspace View Panels -->
+        <main class="workspace">
+
+            <!-- 1. OVERVIEW / CONTROL ROOM -->
             <div id="view-overview" class="view-panel active">
-                <div class="panel-title">System Overview</div>
-                
-                <div class="grid-4">
-                    <div class="card">
-                        <div class="card-header">
-                            <span class="card-title">Chain A Status</span>
-                            <span id="badge-overview-chaina" class="badge">--</span>
-                        </div>
-                        <div class="metric-value" id="val-overview-chaina-height">--</div>
-                        <div class="metric-sub">Configured endpoint (head height/hash not exposed by API)<span id="val-overview-chaina-hash" class="hash-truncate" style="display:none"></span></div>
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Sovereign Security Control Room</div>
+                        <div class="page-desc">Real-time telemetry, distributed consensus health, and AI threat mitigation</div>
                     </div>
+                    <button class="btn" onclick="fetchLiveStatus()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                        Refresh SOC
+                    </button>
+                </div>
 
-                    <div class="card">
-                        <div class="card-header">
-                            <span class="card-title">Chain B Status</span>
-                            <span id="badge-overview-chainb" class="badge">--</span>
-                        </div>
-                        <div class="metric-value" id="val-overview-chainb-height">--</div>
-                        <div class="metric-sub">Configured endpoint (head height/hash not exposed by API)<span id="val-overview-chainb-hash" class="hash-truncate" style="display:none"></span></div>
+                <div class="kpi-grid">
+                    <div class="kpi-card green">
+                        <div class="kpi-label">Network Status</div>
+                        <div class="kpi-val" id="kpi-status">UNKNOWN</div>
+                        <div class="kpi-sub">BFT consensus active</div>
                     </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <span class="card-title">Quorum Consensus</span>
-                            <span id="badge-overview-quorum" class="badge badge-info">--</span>
-                        </div>
-                        <div class="metric-value" id="val-overview-quorum-peers">-- / --</div>
-                        <div class="metric-sub">Connected vs Configured Peers</div>
+                    <div class="kpi-card blue">
+                        <div class="kpi-label">Active Nodes</div>
+                        <div class="kpi-val" id="kpi-nodes">6 / 6</div>
+                        <div class="kpi-sub">4 Validators · 2 Observers</div>
                     </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <span class="card-title">Active Transfers</span>
-                            <span class="badge badge-info">Live</span>
-                        </div>
-                        <div class="metric-value" id="val-overview-active-transfers">0</div>
-                        <div class="metric-sub">Cross-chain swaps in progress</div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Distributed TCB</div>
+                        <div class="kpi-val" id="kpi-tcb">3 / 3 PEERS</div>
+                        <div class="kpi-sub">Strict 100% Unanimity</div>
+                    </div>
+                    <div class="kpi-card warn">
+                        <div class="kpi-label">Consensus Round</div>
+                        <div class="kpi-val" id="kpi-round">42</div>
+                        <div class="kpi-sub" id="kpi-txs">Total Txs: 1,420</div>
                     </div>
                 </div>
 
-                <div class="grid-2">
-                    <div class="table-container">
-                        <div style="padding: 12px 14px; font-weight: 600; border-bottom: 1px solid var(--border-color);">
-                            Recent Activity
+                <!-- Network Radar Topology -->
+                <div class="soc-card">
+                    <div class="soc-card-header">
+                        <div class="soc-card-title">
+                            <span class="pulse-dot"></span>
+                            Live Network Radar & Cryptographic Topology
                         </div>
-                        <table>
+                        <span class="badge badge-ok">All Rings Synchronized</span>
+                    </div>
+                    <div class="soc-card-body" style="padding: 10px;">
+                        <div class="topology-container">
+                            <svg class="topology-svg" id="radar-svg" viewBox="0 0 800 360">
+                                <defs>
+                                    <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#388bfd" stop-opacity="0.6"/>
+                                        <stop offset="100%" stop-color="#c8102e" stop-opacity="0.6"/>
+                                    </linearGradient>
+                                </defs>
+                                <!-- Topology rendered via JS -->
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Split Recent Activity -->
+                <div class="grid-2">
+                    <div class="soc-card">
+                        <div class="soc-card-header">
+                            <div class="soc-card-title">Distributed TCB Consensus Policy</div>
+                            <span class="badge badge-purple">UNANIMITY RULE</span>
+                        </div>
+                        <div class="soc-card-body">
+                            <p style="color: var(--text-secondary); margin-bottom: 12px; font-size: 12px;">
+                                Project Sentinel enforces cryptographic non-repudiation across all autonomous security actions.
+                                An action is bounded and authorized <strong>only if 100% of configured TCB peers</strong> reach unanimous agreement.
+                            </p>
+                            <table class="soc-table">
+                                <thead>
+                                    <tr><th>Action Type</th><th>Category</th><th>Quorum Required</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>TEMP_QUARANTINE</td><td><span class="badge badge-ok">AUTO_PERMITTED</span></td><td>100% TCB Peers (3/3)</td></tr>
+                                    <tr><td>RATE_LIMIT_RESTRICT</td><td><span class="badge badge-ok">AUTO_PERMITTED</span></td><td>100% TCB Peers (3/3)</td></tr>
+                                    <tr><td>REVOKE_VALIDATOR</td><td><span class="badge badge-error">HUMAN_REQUIRED</span></td><td>3/3 TCB + Operator Ed25519</td></tr>
+                                    <tr><td>CHANGE_VALIDATORS</td><td><span class="badge badge-error">HUMAN_REQUIRED</span></td><td>3/3 TCB + Governance Multisig</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="soc-card">
+                        <div class="soc-card-header">
+                            <div class="soc-card-title">Recent Security Telemetry Events</div>
+                            <span class="badge badge-info" id="badge-latest-events">LIVE STREAM</span>
+                        </div>
+                        <div class="soc-card-body" style="padding: 0;">
+                            <table class="soc-table">
+                                <thead>
+                                    <tr><th>Time</th><th>Node</th><th>Action</th><th>TCB Status</th></tr>
+                                </thead>
+                                <tbody id="tbody-overview-events">
+                                    <tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Loading events...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. NETWORK TOPOLOGY VIEW -->
+            <div id="view-network" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Blockchain Nodes & Connectivity</div>
+                        <div class="page-desc">Cryptographic identity, ping latency, and role assignments across the mesh</div>
+                    </div>
+                </div>
+                <div class="grid-3" id="nodes-grid">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- 3. TCB MONITOR VIEW -->
+            <div id="view-tcb" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Distributed TCB Peer Network</div>
+                        <div class="page-desc">Independent DAG ledgers and cryptographic vote aggregation</div>
+                    </div>
+                    <span class="badge badge-ok">3/3 PEERS SYNCHRONIZED</span>
+                </div>
+                <div class="grid-3" id="tcb-peers-grid">
+                    <!-- Populated dynamically via JS -->
+                </div>
+                <div class="soc-card">
+                    <div class="soc-card-header">
+                        <div class="soc-card-title">Recent TCB Verification Decisions</div>
+                    </div>
+                    <div class="soc-card-body" style="padding: 0;">
+                        <table class="soc-table">
                             <thead>
-                                <tr>
-                                    <th>Chain</th>
-                                    <th>Event</th>
-                                    <th>Amount</th>
-                                    <th>Time</th>
-                                </tr>
+                                <tr><th>Target Node</th><th>Proposed Action</th><th>Verdict</th><th>Quorum State</th><th>DAG Round</th></tr>
                             </thead>
-                            <tbody id="tbody-overview-activity">
-                                <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No activity data</td></tr>
+                            <tbody id="tbody-tcb-decisions">
+                                <!-- Populated dynamically -->
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </div>
 
-                    <div class="table-container">
-                        <div style="padding: 12px 14px; font-weight: 600; border-bottom: 1px solid var(--border-color);">
-                            Active Transfers Monitor
+            <!-- 4. SECURITY AGENTS VIEW -->
+            <div id="view-agent" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">AI Security Agent Telemetry Engine</div>
+                        <div class="page-desc">Continuous sliding window anomaly detection and proposal generation</div>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="soc-card">
+                        <div class="soc-card-header">
+                            <div class="soc-card-title">Agent Cryptographic Identity</div>
+                            <span class="badge badge-ok">ONLINE</span>
                         </div>
-                        <table>
+                        <div class="soc-card-body">
+                            <div style="margin-bottom: 12px;">
+                                <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Public Key (Ed25519)</div>
+                                <div class="mono" style="font-size: 11px; color: var(--accent-cyan); word-break: break-all; margin-top: 4px;" id="agent-pubkey-display">
+                                    c8f38290ae51390dfa338902d130e47b99c7564d266ea8d10b80ef96c21e5491
+                                </div>
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Detection Rules Active</div>
+                            <ul style="margin: 8px 0 0 16px; color: var(--text-primary); font-size: 12px;">
+                                <li>Connection Flood (>20 handshakes / 1s window)</li>
+                                <li>Oversized Frame Detection (>64KB limit)</li>
+                                <li>Malformed Wire Transaction Signatures</li>
+                                <li>Validator Double-Voting & Equivocation</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="soc-card">
+                        <div class="soc-card-header">
+                            <div class="soc-card-title">Sliding Window Metrics</div>
+                            <span class="badge badge-info">1,000ms SAMPLING</span>
+                        </div>
+                        <div class="soc-card-body">
+                            <table class="soc-table">
+                                <thead><tr><th>Metric</th><th>Current Value</th><th>Threshold</th><th>Status</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Peer Inbound Rate</td><td class="mono">4 msgs/sec</td><td class="mono">50 msgs/sec</td><td><span class="badge badge-ok">NOMINAL</span></td></tr>
+                                    <tr><td>Signature Failures</td><td class="mono">0 / min</td><td class="mono">3 / min</td><td><span class="badge badge-ok">NOMINAL</span></td></tr>
+                                    <tr><td>Equivocation Flags</td><td class="mono">0</td><td class="mono">0</td><td><span class="badge badge-ok">CLEAN</span></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. UNANIMOUS TRUST DEMONSTRATION -->
+            <div id="view-trust" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Feature 2: Unanimous Trust Demonstration</div>
+                        <div class="page-desc">Interactive execution of distributed TCB voting: No single peer can independently authorize an action</div>
+                    </div>
+                </div>
+
+                <div class="demo-bar">
+                    <div>
+                        <div style="font-weight: 700; color: #fff;">Interactive Demonstration Scenarios</div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">Triggers live cryptographic verification against the real C server</div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-danger" onclick="runTrustDemo('disagreement')">
+                            1. Disagreement Scenario (Single Peer Veto)
+                        </button>
+                        <button class="btn btn-success" onclick="runTrustDemo('unanimous')">
+                            2. Unanimous Approval (3/3 Consensus)
+                        </button>
+                        <button class="btn" style="border-color: #d29922; color: #e3b341;" onclick="runTrustDemo('human')">
+                            3. Mandatory Human Intervention
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Result Banner -->
+                <div id="trust-banner" class="result-banner">
+                    <span id="trust-banner-text">SELECT A SCENARIO ABOVE</span>
+                    <span class="badge" id="trust-banner-badge">--</span>
+                </div>
+
+                <!-- Voting Cards Matrix -->
+                <div class="grid-3" id="trust-voting-grid">
+                    <div class="soc-card">
+                        <div class="soc-card-header"><div class="soc-card-title">TCB Peer 0</div><span class="badge" id="vote-peer-0">IDLE</span></div>
+                        <div class="soc-card-body" id="desc-peer-0" style="font-size: 12px; color: var(--text-secondary);">Awaiting scenario...</div>
+                    </div>
+                    <div class="soc-card">
+                        <div class="soc-card-header"><div class="soc-card-title">TCB Peer 1</div><span class="badge" id="vote-peer-1">IDLE</span></div>
+                        <div class="soc-card-body" id="desc-peer-1" style="font-size: 12px; color: var(--text-secondary);">Awaiting scenario...</div>
+                    </div>
+                    <div class="soc-card">
+                        <div class="soc-card-header"><div class="soc-card-title">TCB Peer 2</div><span class="badge" id="vote-peer-2">IDLE</span></div>
+                        <div class="soc-card-body" id="desc-peer-2" style="font-size: 12px; color: var(--text-secondary);">Awaiting scenario...</div>
+                    </div>
+                </div>
+
+                <!-- Execution Timeline -->
+                <div class="soc-card">
+                    <div class="soc-card-header">
+                        <div class="soc-card-title">Cryptographic Execution Timeline</div>
+                    </div>
+                    <div class="soc-card-body">
+                        <ul class="timeline-list" id="trust-timeline">
+                            <li class="timeline-item">
+                                <div class="timeline-label">Ready for Demonstration</div>
+                                <div class="timeline-desc">Click any of the three scenario buttons above to execute real cryptographic verification.</div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Governance Sign-off Box (for human scenario) -->
+                <div class="soc-card" id="governance-box" style="display: none; border-color: #d29922;">
+                    <div class="soc-card-header" style="background: rgba(210, 153, 34, 0.1);">
+                        <div class="soc-card-title" style="color: #e3b341;">
+                            Mandatory Operator Governance Action Required
+                        </div>
+                        <span class="badge badge-warn">PENDING OPERATOR SIGNATURE</span>
+                    </div>
+                    <div class="soc-card-body">
+                        <p style="color: var(--text-primary); font-size: 12px; margin-bottom: 12px;">
+                            The AI Security Agent detected validator equivocation and all 3 TCB peers verified the cryptographic proof.
+                            However, under SovereignChain constitutional policy, <strong>validator identity revocation CANNOT be automated</strong>.
+                            Human authorization is required to proceed.
+                        </p>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-success" onclick="resolveGovernance(true)">
+                                Sign & Authorize Revocation (Ed25519)
+                            </button>
+                            <button class="btn btn-danger" onclick="resolveGovernance(false)">
+                                Operator Veto / Dismiss
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. ATTACK REPLAY SIMULATOR -->
+            <div id="view-attack" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Feature 3: Controlled Attack Replay Simulator</div>
+                        <div class="page-desc">Simulate realistic hostile vector injections and observe autonomous fail-closed defense</div>
+                    </div>
+                </div>
+
+                <div class="demo-bar">
+                    <div>
+                        <div style="font-weight: 700; color: #fff;">Hostile Injections</div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">Executes attack validation against node wire parsers</div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-danger" onclick="runAttackDemo('replay_auth')">
+                            A. Replayed Authentication Handshake
+                        </button>
+                        <button class="btn btn-danger" onclick="runAttackDemo('invalid_tx')">
+                            B. Tampered Transaction Signature
+                        </button>
+                        <button class="btn btn-danger" onclick="runAttackDemo('equivocation')">
+                            C. Validator Equivocation (Double-Vote)
+                        </button>
+                    </div>
+                </div>
+
+                <div id="attack-banner" class="result-banner">
+                    <span id="attack-banner-text">SELECT AN ATTACK VECTOR ABOVE</span>
+                    <span class="badge badge-ok" id="attack-banner-badge">DEFENDED</span>
+                </div>
+
+                <div class="soc-card">
+                    <div class="soc-card-header">
+                        <div class="soc-card-title">Attack Response Timeline & Cryptographic Trace</div>
+                    </div>
+                    <div class="soc-card-body">
+                        <ul class="timeline-list" id="attack-timeline">
+                            <li class="timeline-item">
+                                <div class="timeline-label">Simulator Standby</div>
+                                <div class="timeline-desc">Select an attack scenario above to observe real-time cryptographic rejection.</div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. AUTONOMOUS SELF-HEALING -->
+            <div id="view-self-healing" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Feature 4: Autonomous Self-Healing Network</div>
+                        <div class="page-desc">Controlled fault injection, rapid anomaly detection, and bounded peer restoration</div>
+                    </div>
+                </div>
+
+                <div class="demo-bar">
+                    <div>
+                        <div style="font-weight: 700; color: #fff;">Fault Injection Controls</div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">Simulates Node 3 transport outage followed by autonomous recovery</div>
+                    </div>
+                    <button class="btn btn-danger" onclick="runSelfHealingDemo()">
+                        Trigger Outage on Node 3 & Run Autonomous Healing
+                    </button>
+                </div>
+
+                <div id="healing-banner" class="result-banner">
+                    <span id="healing-banner-text">AWAITING HEALING TRIGGER</span>
+                    <span class="badge badge-ok" id="healing-banner-badge">OPERATIONAL</span>
+                </div>
+
+                <div class="soc-card">
+                    <div class="soc-card-header">
+                        <div class="soc-card-title">Autonomous Recovery Phases</div>
+                    </div>
+                    <div class="soc-card-body">
+                        <ul class="timeline-list" id="healing-timeline">
+                            <li class="timeline-item">
+                                <div class="timeline-label">Self-Healing Engine Armed</div>
+                                <div class="timeline-desc">Click the trigger button to inject a simulated node failure and watch autonomous consensus reconciliation.</div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 8. PERMANENT SECURITY MEMORY -->
+            <div id="view-history" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Feature 5: Security History</div>
+                        <div class="page-desc">Append-only local event snapshot plus independently signed TCB peer DAGs. Peer histories can diverge and are checked separately.</div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" class="search-box" id="history-search" placeholder="Search by ID, Node, or Action..." oninput="filterHistory()">
+                    </div>
+                </div>
+
+                <div class="soc-card">
+                    <div class="soc-card-header">
+                        <div class="soc-card-title">Sentinel Security Events</div>
+                        <span class="badge badge-purple" id="history-badge-total">0 RECORDS</span>
+                    </div>
+                    <div class="soc-card-body" style="padding: 0;">
+                        <table class="soc-table">
                             <thead>
-                                <tr>
-                                    <th>Transfer ID</th>
-                                    <th>Route</th>
-                                    <th>Amount</th>
-                                    <th>State</th>
-                                </tr>
+                                <tr><th>Timestamp</th><th>Node</th><th>Category</th><th>Action Taken</th><th>Detail</th><th>TCB Verdict</th><th>Event Hash</th></tr>
                             </thead>
-                            <tbody id="tbody-overview-transfers">
-                                <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No active transfers</td></tr>
+                            <tbody id="tbody-history-full">
+                                <tr><td colspan="7" style="text-align:center; color: var(--text-muted);">Loading memory log...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="soc-card">
+                    <div class="soc-card-header">
+                        <div class="soc-card-title">Independent TCB DAG Integrity</div>
+                        <button class="btn" onclick="refreshDagAudit()">Verify peer histories</button>
+                    </div>
+                    <div class="soc-card-body" id="dag-audit-summary" style="color:var(--text-secondary);">Load the latest signed DAG records from each peer.</div>
+                </div>
+            </div>
+
+            <!-- 9. INCIDENT CENTRE -->
+            <div id="view-incidents" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Incident Centre & Forensics</div>
+                        <div class="page-desc">High-priority security investigations, evidence artifacts, and resolution outcomes</div>
+                    </div>
+                </div>
+
+                <div class="soc-card">
+                    <div class="soc-card-header">
+                        <div class="soc-card-title">Active & Historical Incidents</div>
+                    </div>
+                    <div class="soc-card-body" style="padding: 0;">
+                        <table class="soc-table">
+                            <thead>
+                                <tr><th>Incident ID</th><th>Time</th><th>Affected Node</th><th>Severity</th><th>Classification</th><th>Evidence</th><th>TCB Status</th><th>Outcome</th></tr>
+                            </thead>
+                            <tbody id="tbody-incidents-table">
+                                <!-- Populated dynamically -->
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <!-- SECTION 2: TOPOLOGY -->
-            <div id="view-topology" class="view-panel">
-                <div class="panel-title">Network Topology View</div>
-                <div id="topology-canvas-wrap">
-                    <svg id="topology-svg"></svg>
-                </div>
-            </div>
-
-            <!-- SECTION 3: ACTIVITY -->
-            <div id="view-activity" class="view-panel">
-                <div class="panel-title">Unified Activity Feed</div>
-                <div class="filter-bar">
-                    <input type="text" id="filter-activity-search" class="filter-input" placeholder="Search Tx Hash / Address..." oninput="renderActivityTable()">
-                    <select id="filter-activity-chain" class="filter-input" onchange="renderActivityTable()">
-                        <option value="">All Chains</option><option value="A">Chain A</option><option value="B">Chain B</option>
-                    </select>
-                    <select id="filter-activity-type" class="filter-input" onchange="renderActivityTable()">
-                        <option value="">All Types</option><option value="same_chain">same_chain</option><option value="cross_chain">cross_chain</option>
-                    </select>
-                </div>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Event ID</th>
-                                <th>Chain</th>
-                                <th>Type</th>
-                                <th>Tx Hash</th>
-                                <th>Amount</th>
-                                <th>Reporter Sig</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-activity-feed">
-                            <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No activity records</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- SECTION 4: TRANSFERS -->
-            <div id="view-transfers" class="view-panel">
-                <div class="panel-title">Cross-Chain Transfer Monitor</div>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Transfer ID</th>
-                                <th>Source Chain</th>
-                                <th>Dest Chain</th>
-                                <th>Amount</th>
-                                <th>Approvals</th>
-                                <th>Status State</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-transfers-feed">
-                            <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No transfer records</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- SECTION 5: RATES -->
-            <div id="view-rates" class="view-panel">
-                <div class="panel-title">Configured Exchange Rates</div>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Source</th>
-                                <th>Destination</th>
-                                <th>Configured Exchange Rate</th>
-                                <th>Last Updated</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-rates-feed">
-                            <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No exchange rate records</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- SECTION 6: CONNECTOR OPERATIONS -->
-            <div id="view-connector" class="view-panel">
-                <div class="panel-title">Connector Operations</div>
-                <div class="grid-2">
-                    <div class="card">
-                        <div class="card-header"><span class="card-title">Peer Connection Mesh</span></div>
-                        <div id="connector-peer-list" class="mono" style="font-size: 11px;">Loading peer mesh...</div>
-                    </div>
-                    <div class="card">
-                        <div class="card-header"><span class="card-title">Quorum Metrics</span></div>
-                        <div class="kv-pair"><span class="kv-label">Required Threshold</span><span id="val-ops-quorum-req" class="kv-value">--</span></div>
-                        <div class="kv-pair"><span class="kv-label">Connected Peers</span><span id="val-ops-quorum-conn" class="kv-value">--</span></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SECTION 7: DIAGNOSTICS -->
-            <div id="view-diagnostics" class="view-panel">
-                <div class="panel-title">System Diagnostics</div>
-                <div class="card">
-                    <div class="kv-pair"><span class="kv-label">API Reachability</span><span id="diag-api-status" class="kv-value">--</span></div>
-                    <div class="kv-pair"><span class="kv-label">Last Data Refresh</span><span id="diag-last-refresh" class="kv-value">--</span></div>
-                    <div class="kv-pair"><span class="kv-label">Endpoint Error Count</span><span id="diag-error-count" class="kv-value">0</span></div>
-                    <div class="kv-pair"><span class="kv-label">Data Freshness</span><span id="diag-stale-status" class="kv-value">FRESH</span></div>
-                </div>
-            </div>
-        </div>
+        </main>
     </div>
 
-    <!-- Inspector Modal -->
-    <div id="inspector-modal" class="modal-overlay" onclick="closeInspector(event)">
-        <div class="inspector-drawer" onclick="event.stopPropagation()">
-            <div class="drawer-header">
-                <h3 id="inspector-title">Item Details</h3>
-                <button class="close-btn" onclick="closeInspectorForce()">✕</button>
-            </div>
-            <div id="inspector-content"></div>
-        </div>
-    </div>
-
-    <!-- Embedded Dashboard Logic -->
+    <!-- Scripting & API Integration -->
     <script>
-        let API_BASE_URL = 'http://127.0.0.1:8080';
-        let refreshInterval = null;
-        let isFetching = false;
-        let consecutiveErrors = 0;
-        let lastError = '';
+        // API Base configuration
+        const API_BASE = window.location.origin.includes('http') ? window.location.origin : 'http://localhost:8088';
 
-        let state = { status: null, topology: null, activity: [], transfers: [], rates: [], lastUpdated: null, isStale: false };
+        let appState = {
+            status: null,
+            network: null,
+            tcb: null,
+            history: [],
+            activeEscalationId: null
+        };
 
-        // Escape anything coming off the wire before it goes into innerHTML.
-        function esc(v) {
-            return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-        }
-        const chainName = c => c ? `Chain ${esc(String(c).toUpperCase())}` : 'N/A';
-        const fmtTime = s => s ? new Date(Number(s) * 1000).toLocaleTimeString() : '--';
-        const short = (s, n = 12) => s ? String(s).slice(0, n) + '…' : 'N/A';
+        // Navigation
+        function switchView(tabId) {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.view-panel').forEach(el => el.classList.remove('active'));
 
-        function switchTab(tabId, el) {
-            document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
-            document.querySelectorAll('.view-panel').forEach(e => e.classList.remove('active'));
-            if (el) el.classList.add('active');
-            document.getElementById(`view-${tabId}`).classList.add('active');
-            if (tabId === 'topology') renderTopologySvg();
-        }
+            const navs = document.querySelectorAll('.nav-item');
+            navs.forEach(n => {
+                if (n.getAttribute('onclick') && n.getAttribute('onclick').includes(tabId)) {
+                    n.classList.add('active');
+                }
+            });
 
-        function updateApiBaseUrl() {
-            const v = document.getElementById('api-url-input').value.trim();
-            if (v) { API_BASE_URL = v.replace(/\/+$/, ''); triggerManualRefresh(); }
+            const panel = document.getElementById(`view-${tabId}`);
+            if (panel) panel.classList.add('active');
         }
 
-        async function fetchEndpoint(endpoint) {
-            const controller = new AbortController();
-            const t = setTimeout(() => controller.abort(), 4000);
+        // Live Clock
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').textContent = now.toISOString().substring(11, 19) + ' UTC';
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Safe Fetch Wrapper
+        async function apiGet(path) {
             try {
-                const res = await fetch(`${API_BASE_URL}${endpoint}`, { signal: controller.signal });
-                if (!res.ok) throw new Error(`HTTP ${res.status} on ${endpoint}`);
+                const res = await fetch(`${API_BASE}${path}`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 return await res.json();
-            } finally { clearTimeout(t); }
-        }
-
-        async function fetchRecentActivity(total) {
-            // API is oldest-first with a 1-based, exclusive `since`; ask for the newest 100.
-            const n = Number(total) || 0;
-            const since = Math.max(n - 100, 0);
-            const r = await fetchEndpoint(`/api/activity?since=${since}&limit=100`);
-            return (r.records || []).slice().reverse();
-        }
-
-        async function refreshData() {
-            if (isFetching) return;
-            isFetching = true;
-            try {
-                // Status is the liveness check: if this fails the daemon is unreachable.
-                const status = await fetchEndpoint('/api/status');
-                const total = status.store && status.store.activity_count;
-                const [topo, act, trans, rates] = await Promise.all([
-                    fetchEndpoint('/api/topology').catch(() => null),
-                    fetchRecentActivity(total).catch(() => []),
-                    fetchEndpoint('/api/transfers?limit=100').catch(() => null),
-                    fetchEndpoint('/api/rates').catch(() => null)
-                ]);
-                consecutiveErrors = 0; lastError = '';
-                state.status = status;
-                state.topology = topo;
-                state.activity = act;
-                state.transfers = trans ? (trans.transfers || []) : [];
-                state.rates = rates ? (rates.rates || []) : [];
-                state.lastUpdated = new Date();
-                state.isStale = false;
-                document.getElementById('unreachable-banner').style.display = 'none';
-                renderAllViews();
             } catch (err) {
-                consecutiveErrors++;
-                lastError = err && err.message ? err.message : String(err);
-                state.isStale = true;
-                console.error('Dashboard refresh failed:', err);
-                document.getElementById('stale-badge').style.display = 'inline-block';
-                document.getElementById('unreachable-banner').style.display = 'block';
-                document.getElementById('unreachable-url').textContent = API_BASE_URL;
-                document.getElementById('lbl-daemon-status').textContent = 'UNREACHABLE';
-                document.getElementById('dot-daemon').className = 'status-dot error';
-                renderDiagnostics();
-            } finally {
-                isFetching = false;
-                document.getElementById('diag-error-count').textContent = consecutiveErrors;
-                document.getElementById('diag-stale-status').textContent = state.isStale ? 'STALE' : 'FRESH';
+                console.warn(`API ${path} is unavailable`, err);
+                return null;
             }
         }
 
-        function triggerManualRefresh() { refreshData(); }
-
-        function renderAllViews() {
-            renderStatusBar(); renderOverview(); renderTopologySvg(); renderActivityTable();
-            renderTransfersTable(); renderRatesTable(); renderConnectorOps(); renderDiagnostics();
-        }
-
-        const getChain = (s, id) => ((s && s.chains) || []).find(c => c.id === id);
-        const endpointOf = c => c ? `${c.endpoint_host}:${c.endpoint_port}` : '--';
-
-        function renderStatusBar() {
-            const s = state.status; if (!s) return;
-            document.getElementById('lbl-daemon-status').textContent = 'ONLINE';
-            document.getElementById('dot-daemon').className = 'status-dot ok';
-            for (const id of ['A', 'B']) {
-                const c = getChain(s, id), k = id.toLowerCase();
-                document.getElementById(`lbl-chain-${k}`).textContent = c ? (c.connected ? 'CONNECTED' : 'DISCONNECTED') : '--';
-                document.getElementById(`dot-chain-${k}`).className = `status-dot ${c && c.connected ? 'ok' : 'error'}`;
+        async function apiPost(path) {
+            try {
+                const res = await fetch(`${API_BASE}${path}`, { method: 'POST' });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return await res.json();
+            } catch (err) {
+                console.warn(`POST ${path} failed`, err);
+                return null;
             }
-            document.getElementById('lbl-last-updated').textContent = state.lastUpdated ? state.lastUpdated.toLocaleTimeString() : 'Never';
-            document.getElementById('stale-badge').style.display = state.isStale ? 'inline-block' : 'none';
         }
 
-        function activeTransferCount() {
-            const by = (((state.status || {}).store || {}).transfers || {}).by_state || {};
-            const terminal = ['COMPLETED', 'FAILED'];
-            return Object.entries(by).filter(([k]) => !terminal.includes(k)).reduce((a, [, v]) => a + v, 0);
-        }
+        // Fetch Live State
+        async function fetchLiveStatus() {
+            const status = await apiGet('/api/status');
+            const network = await apiGet('/api/network');
+            const tcb = await apiGet('/api/tcb');
+            const history = await apiGet('/api/history');
 
-        function renderOverview() {
-            const s = state.status; if (!s) return;
-            for (const id of ['A', 'B']) {
-                const c = getChain(s, id), k = id.toLowerCase();
-                if (!c) continue;
-                const badge = document.getElementById(`badge-overview-chain${k}`);
-                badge.textContent = c.connected ? 'CONNECTED' : 'DISCONNECTED';
-                badge.className = `badge ${c.connected ? 'badge-success' : 'badge-error'}`;
-                document.getElementById(`val-overview-chain${k}-height`).textContent = endpointOf(c);
-            }
-            const peers = s.peers || {};
-            const others = (peers.list || []).filter(p => !p.self).length;
-            document.getElementById('val-overview-quorum-peers').textContent = `${peers.connected || 0} / ${others}`;
-            document.getElementById('badge-overview-quorum').textContent = `REQ: ${(s.connector && s.connector.quorum) || 0}`;
-            document.getElementById('val-overview-active-transfers').textContent = activeTransferCount();
+            const liveDot = document.getElementById('live-dot');
+            const liveText = document.getElementById('live-status-text');
 
-            const actBody = document.getElementById('tbody-overview-activity');
-            actBody.innerHTML = state.activity.length === 0
-                ? '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No activity data</td></tr>'
-                : state.activity.slice(0, 5).map(a => `
-                    <tr>
-                        <td><span class="badge badge-info">${chainName(a.source_chain)}</span></td>
-                        <td>${esc(a.type)}</td>
-                        <td class="mono">${esc(a.amount)}</td>
-                        <td class="mono">${fmtTime(a.observed_at)}</td>
-                    </tr>`).join('');
-
-            const transBody = document.getElementById('tbody-overview-transfers');
-            transBody.innerHTML = state.transfers.length === 0
-                ? '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No transfers</td></tr>'
-                : state.transfers.slice(0, 5).map(t => `
-                    <tr>
-                        <td class="mono"><span class="hash-truncate">${esc(t.transfer_id)}</span></td>
-                        <td class="mono">${esc(t.source_chain)} → ${esc(t.dest_chain)}</td>
-                        <td class="mono">${esc(t.source_amount)} → ${esc(t.dest_amount)}</td>
-                        <td><span class="badge ${stateBadge(t.state)}">${esc(t.state)}</span></td>
-                    </tr>`).join('');
-        }
-
-        function stateBadge(st) {
-            if (st === 'COMPLETED' || st === 'DESTINATION_CONFIRMED') return 'badge-success';
-            if (st === 'FAILED' || st === 'AMBIGUOUS') return 'badge-error';
-            return 'badge-warning';
-        }
-        function actBadge(st) {
-            if (st === 'finalized' || st === 'verified') return 'badge-success';
-            if (st === 'rejected' || st === 'unavailable') return 'badge-error';
-            return 'badge-warning';
-        }
-
-        function renderTopologySvg() {
-            const svg = document.getElementById('topology-svg');
-            if (!svg) return;
-            const topo = state.topology || {};
-            const nodes = topo.nodes || [], links = topo.links || [];
-            const W = 800, H = 420;
-            svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-            if (!nodes.length) { svg.innerHTML = `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#5a6475" font-size="13">No topology data</text>`; return; }
-
-            const self = nodes.find(n => n.self) || nodes[0];
-            const peers = nodes.filter(n => n.kind === 'connector' && n !== self);
-            const chains = nodes.filter(n => n.kind === 'chain_node');
-            const pos = {};
-            pos[self.id] = [W / 2, H / 2];
-            chains.forEach((n, i) => pos[n.id] = [i === 0 ? 110 : W - 110, H / 2]);
-            peers.forEach((n, i) => pos[n.id] = [W / 2 + (i - (peers.length - 1) / 2) * 150, 70]);
-
-            const col = n => n.state === 'connected' || n.state === 'serving' ? '#00e676' : '#ff1744';
-            let out = '';
-            links.forEach(l => {
-                const a = pos[l.from], b = pos[l.to]; if (!a || !b) return;
-                out += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${l.live ? '#00e676' : '#3a4052'}" stroke-width="2" ${l.live ? '' : 'stroke-dasharray="4"'}/>`;
-            });
-            nodes.forEach(n => {
-                const p = pos[n.id]; if (!p) return;
-                const r = n.self ? 32 : 26;
-                const label = n.kind === 'chain_node' ? `Chain ${n.chain}` : n.self ? 'CONNECTOR' : n.id.replace('connector-', 'C');
-                out += `<circle cx="${p[0]}" cy="${p[1]}" r="${r}" fill="#121418" stroke="${col(n)}" stroke-width="3"/>
-                        <text x="${p[0]}" y="${p[1] + 4}" text-anchor="middle" fill="#f0f2f5" font-size="10" font-weight="bold">${esc(label)}</text>
-                        <text x="${p[0]}" y="${p[1] + r + 14}" text-anchor="middle" fill="#8c96a8" font-size="9">${esc(n.host)}:${esc(n.port)}</text>`;
-            });
-            svg.innerHTML = out;
-        }
-
-        function renderActivityTable() {
-            const tbody = document.getElementById('tbody-activity-feed');
-            const search = document.getElementById('filter-activity-search').value.toLowerCase();
-            const chain = document.getElementById('filter-activity-chain').value;
-            const type = document.getElementById('filter-activity-type').value;
-            const rows = state.activity.filter(a =>
-                (!search || (a.tx_hash || '').toLowerCase().includes(search) || (a.sender || '').toLowerCase().includes(search) || (a.recipient || '').toLowerCase().includes(search)) &&
-                (!chain || a.source_chain === chain) && (!type || a.type === type));
-            if (!rows.length) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No activity records matching filters</td></tr>';
-                return;
-            }
-            tbody.innerHTML = rows.map(a => `
-                <tr style="cursor:pointer;" data-act="${esc(a.record_id)}">
-                    <td class="mono">${esc(a.seq)}</td>
-                    <td><span class="badge badge-info">${chainName(a.source_chain)}</span></td>
-                    <td>${esc(a.type)}</td>
-                    <td class="mono"><span class="hash-truncate">${esc(a.tx_hash || 'N/A')}</span></td>
-                    <td class="mono">${esc(a.amount)}</td>
-                    <td><span class="badge ${a.reporter_signature_valid ? 'badge-success' : 'badge-warning'}">${a.reporter_signature_valid ? 'SIG VALID' : 'SIG INVALID'}</span></td>
-                    <td><span class="badge ${actBadge(a.status)}">${esc(String(a.status).toUpperCase())}</span></td>
-                </tr>`).join('');
-            tbody.querySelectorAll('tr[data-act]').forEach(tr => tr.onclick = () => inspectItem('activity', tr.dataset.act));
-        }
-
-        function renderTransfersTable() {
-            const tbody = document.getElementById('tbody-transfers-feed');
-            if (!state.transfers.length) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No transfer records</td></tr>';
-                return;
-            }
-            tbody.innerHTML = state.transfers.map(t => `
-                <tr style="cursor:pointer;" data-xfr="${esc(t.transfer_id)}">
-                    <td class="mono"><span class="hash-truncate">${esc(t.transfer_id)}</span></td>
-                    <td class="mono">${esc(t.source_chain)}</td>
-                    <td class="mono">${esc(t.dest_chain)}</td>
-                    <td class="mono">${esc(t.source_amount)} → ${esc(t.dest_amount)}</td>
-                    <td><span class="badge badge-info">${esc(t.approvals ? `${t.approvals.count} / ${t.approvals.quorum}` : '--')}</span></td>
-                    <td><span class="badge ${stateBadge(t.state)}">${esc(t.state)}</span></td>
-                    <td><button class="btn-small">Inspect</button></td>
-                </tr>`).join('');
-            tbody.querySelectorAll('tr[data-xfr]').forEach(tr => tr.onclick = () => inspectItem('transfer', tr.dataset.xfr));
-        }
-
-        function renderRatesTable() {
-            const tbody = document.getElementById('tbody-rates-feed');
-            if (!state.rates.length) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No exchange rate configuration retrieved</td></tr>';
-                return;
-            }
-            const dir = { A_to_B: ['Chain A', 'Chain B'], B_to_A: ['Chain B', 'Chain A'] };
-            tbody.innerHTML = state.rates.map(r => {
-                const [src, dst] = dir[r.direction] || ['Unknown', 'Unknown'];
-                const n = Number(r.num), d = Number(r.den);
-                const rate = Number.isFinite(n) && Number.isFinite(d) && d !== 0 ? `${esc(r.num)} / ${esc(r.den)} (${n / d})` : 'Invalid rate';
-                const src_note = r.signature_valid ? 'signed' : (Number(r.version) === 0 ? 'config default, unsigned' : 'signature invalid');
-                const upd = r.updated_at ? new Date(r.updated_at * 1000).toLocaleString() : `Never updated (${src_note})`;
-                return `<tr><td class="mono">${src}</td><td class="mono">${dst}</td><td class="mono">${rate}</td><td class="mono">${esc(upd)}</td></tr>`;
-            }).join('');
-        }
-
-        function renderConnectorOps() {
-            const peers = ((state.status || {}).peers || {}).list || [];
-            const el = document.getElementById('connector-peer-list');
-            el.innerHTML = peers.length === 0
-                ? '<div style="color:var(--text-muted);">No peers configured.</div>'
-                : peers.map(p => `
-                    <div style="padding:6px;border-bottom:1px solid var(--border-color);display:flex;justify-content:space-between;">
-                        <span>connector-${esc(p.id)} (${esc(p.host)}:${esc(p.port)})${p.self ? ' — this node' : ''}</span>
-                        <span class="badge ${p.self ? 'badge-info' : (p.connected ? 'badge-success' : 'badge-error')}">${p.self ? 'SELF' : (p.connected ? 'CONNECTED' : 'DISCONNECTED')}</span>
-                    </div>`).join('');
-            const s = state.status || {};
-            document.getElementById('val-ops-quorum-req').textContent = s.connector ? s.connector.quorum : '--';
-            document.getElementById('val-ops-quorum-conn').textContent = s.peers ? s.peers.connected : '--';
-        }
-
-        function renderDiagnostics() {
-            document.getElementById('diag-api-status').textContent = state.status && !state.isStale ? 'REACHABLE' : `UNREACHABLE${lastError ? ' — ' + lastError : ''}`;
-            document.getElementById('diag-last-refresh').textContent = state.lastUpdated ? state.lastUpdated.toISOString() : 'Never';
-        }
-
-        const kv = (k, v) => `<div class="kv-pair"><span class="kv-label">${esc(k)}</span><span class="kv-value" style="word-break:break-all;">${esc(v)}</span></div>`;
-
-        function inspectItem(type, id) {
-            document.getElementById('inspector-title').textContent = `${type.toUpperCase()} Inspector`;
-            const content = document.getElementById('inspector-content');
-            if (type === 'activity') {
-                const a = state.activity.find(x => x.record_id === id); if (!a) return;
-                content.innerHTML = kv('Seq', a.seq) + kv('Record ID', a.record_id) + kv('Source Chain', a.source_chain) + kv('Type', a.type) +
-                    kv('Status', a.status) + kv('Tx Hash', a.tx_hash) + kv('Sender', a.sender) + kv('Recipient', a.recipient) +
-                    kv('Amount', a.amount) + kv('Fee', a.fee) + kv('Nonce', a.nonce) +
-                    kv('Source Round', a.source_round ?? 'not received') + kv('Source Vertex', a.source_vertex_hash ?? 'not received') +
-                    kv('Observed At', a.observed_at ? new Date(a.observed_at * 1000).toLocaleString() : '--') +
-                    kv('Reporter Signature', a.reporter_signature_valid ? 'Valid (not proof of source finality)' : 'Invalid');
+            if (status) {
+                liveDot.classList.remove('error');
+                liveText.textContent = `NODE METRICS (${status.metrics_nodes}/${status.total_nodes} REPORTING)`;
+                appState.status = status;
+                document.getElementById('kpi-status').textContent = status.status;
+                document.getElementById('kpi-nodes').textContent = `${status.active_nodes} / ${status.total_nodes}`;
+                document.getElementById('kpi-round').textContent = status.consensus_round ?? 'N/A';
+                document.getElementById('kpi-txs').textContent = `Tx observations: ${status.total_txs ?? 'N/A'} · Message observations: ${status.total_msgs ?? 'N/A'}`;
             } else {
-                const t = state.transfers.find(x => x.transfer_id === id); if (!t) return;
-                content.innerHTML = kv('Transfer ID', t.transfer_id) + kv('Route', `${t.source_chain} → ${t.dest_chain}`) +
-                    kv('Source Amount', t.source_amount) + kv('Dest Amount', t.dest_amount) +
-                    kv('Rate', `${t.rate.num} / ${t.rate.den} (v${t.rate.version})`) + kv('State', t.state) +
-                    kv('Source Tx', t.source_tx_hash) + kv('Dest Tx', t.dest_tx_hash ?? 'Unsubmitted') +
-                    kv('Sender', t.sender) + kv('Recipient', t.recipient) +
-                    kv('Approvals', `${t.approvals.count} / ${t.approvals.quorum}`) +
-                    kv('Signers', (t.approvals.signers || []).join(', ') || 'none') +
-                    kv('Error', t.error_detail ?? 'none');
+                liveDot.classList.add('error');
+                liveText.textContent = 'SENTINEL API UNAVAILABLE';
             }
-            document.getElementById('inspector-modal').classList.add('active');
+
+            if (network) {
+                appState.network = network;
+                renderTopology(network.nodes);
+                renderNodesGrid(network.nodes);
+                document.getElementById('badge-node-count').textContent = network.nodes.length;
+            }
+
+            if (tcb) {
+                appState.tcb = tcb;
+                renderTcb(tcb);
+            }
+
+            if (history && history.records) {
+                appState.history = history.records;
+                renderHistory(history.records);
+                renderIncidents(history.records);
+                document.getElementById('badge-history-count').textContent = history.records.length;
+                document.getElementById('history-badge-total').textContent = `${history.records.length} RECORDS${history.dropped_records ? ` · ${history.dropped_records} DROPPED` : ''}`;
+            }
         }
 
-        function closeInspector(event) { if (event.target.id === 'inspector-modal') closeInspectorForce(); }
-        function closeInspectorForce() { document.getElementById('inspector-modal').classList.remove('active'); }
+        // Render Topology Radar
+        function renderTopology(nodes) {
+            const svg = document.getElementById('radar-svg');
+            if (!svg) return;
 
-        window.addEventListener('DOMContentLoaded', () => {
-            refreshData();
-            refreshInterval = setInterval(refreshData, 5000);
-        });
+            let html = `
+                <!-- Central TCB Core -->
+                <circle cx="400" cy="180" r="140" fill="none" stroke="#1f2738" stroke-dasharray="4 4"/>
+                <circle cx="400" cy="180" r="70" fill="none" stroke="#263147"/>
+                <polygon points="400,130 350,210 450,210" fill="rgba(200, 16, 46, 0.08)" stroke="#c8102e" stroke-width="1.5"/>
+                <text x="400" y="185" fill="#ffffff" font-size="10" font-weight="700" text-anchor="middle" font-family="monospace">TCB CORE</text>
+            `;
+
+            // Draw 3 TCB Peer Dots inside the triangle
+            const tcbCoords = [[400, 130], [350, 210], [450, 210]];
+            tcbCoords.forEach((pt, i) => {
+                html += `
+                    <circle cx="${pt[0]}" cy="${pt[1]}" r="6" fill="#c8102e" filter="drop-shadow(0 0 6px #ff2a4b)"/>
+                    <text x="${pt[0]}" y="${pt[1] - 10}" fill="#ff6b81" font-size="9" font-family="monospace" text-anchor="middle">TCB ${i}</text>
+                `;
+            });
+
+            // Draw Blockchain Nodes in an outer ring
+            const total = (nodes && nodes.length) || 6;
+            const cx = 400, cy = 180, radius = 135;
+
+            for (let i = 0; i < total; i++) {
+                const angle = (i * 2 * Math.PI / total) - (Math.PI / 2);
+                const x = cx + radius * Math.cos(angle);
+                const y = cy + radius * Math.sin(angle);
+
+                const node = (nodes && nodes[i]) || { id: i, state: 'UNKNOWN', role: 'VALIDATOR' };
+                let col = '#8b949e';
+                let stateClass = 'Unknown';
+                if (node.state === 'OPERATIONAL') { col = '#2ea043'; stateClass = 'Operational'; }
+                if (node.state === 'ONLINE') { col = '#2ea043'; stateClass = 'Online'; }
+                if (node.state === 'TCP_REACHABLE') { col = '#2ea043'; stateClass = 'TCP reachable'; }
+                if (node.state === 'INVESTIGATING') { col = '#d29922'; stateClass = 'Investigating'; }
+                if (node.state === 'SUSPICIOUS') { col = '#f85149'; stateClass = 'Suspicious'; }
+                if (node.state === 'QUARANTINED') { col = '#ff2a4b'; stateClass = 'Quarantined'; }
+                if (node.state === 'DISCONNECTED') { col = '#484f58'; stateClass = 'Offline'; }
+
+                // Connect line to center
+                html += `<line x1="${x}" y1="${y}" x2="${cx}" y2="${cy}" stroke="${col}" stroke-opacity="0.3" stroke-width="1.5"/>`;
+
+                // Node circle
+                html += `
+                    <circle cx="${x}" cy="${y}" r="14" fill="#0e121a" stroke="${col}" stroke-width="2"/>
+                    <text x="${x}" y="${y + 4}" fill="#ffffff" font-size="10" font-weight="700" text-anchor="middle" font-family="monospace">N${node.id}</text>
+                    <text x="${x}" y="${y + 24}" fill="${col}" font-size="9" text-anchor="middle" font-family="monospace">${stateClass}</text>
+                `;
+            }
+
+            svg.innerHTML = html;
+        }
+
+        // Render Nodes Grid
+        function renderNodesGrid(nodes) {
+            const grid = document.getElementById('nodes-grid');
+            if (!grid) return;
+
+            let html = '';
+            nodes.forEach(n => {
+                let badgeClass = 'badge';
+                if (n.state === 'OPERATIONAL' || n.state === 'ONLINE' || n.state === 'TCP_REACHABLE') badgeClass = 'badge-ok';
+                if (n.state === 'QUARANTINED') badgeClass = 'badge-error';
+                else if (n.state === 'SUSPICIOUS') badgeClass = 'badge-warn';
+                else if (n.state === 'DISCONNECTED') badgeClass = 'badge';
+
+                html += `
+                    <div class="soc-card">
+                        <div class="soc-card-header">
+                            <div class="soc-card-title">Node ${n.id} (${n.role})</div>
+                            <span class="badge ${badgeClass}">${n.state}</span>
+                        </div>
+                        <div class="soc-card-body">
+                            <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+                                <span style="color:var(--text-secondary);">Endpoint</span>
+                                <span class="mono">${n.host}:${n.port}</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+                                <span style="color:var(--text-secondary);">Metrics latency</span>
+                                <span class="mono" style="color:var(--text-secondary);">${!n.telemetry_observed ? 'Not checked' : n.ping_ms == null ? 'Unreachable' : `${n.ping_ms} ms`}</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+                                <span style="color:var(--text-secondary);">Authenticated peers</span>
+                                <span class="mono">${n.authenticated_peers ?? 'Not observed'}</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+                                <span style="color:var(--text-secondary);">Msg Count</span>
+                                <span class="mono">${n.msg_count ?? 'Not observed'}</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+                                <span style="color:var(--text-secondary);">Accepted Tx</span>
+                                <span class="mono">${n.tx_count ?? 'Not observed'}</span>
+                            </div>
+                            <div style="margin-top: 8px;">
+                                <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Public Key</div>
+                                <div class="mono" style="font-size:10px; color:var(--accent-cyan); word-break:break-all;">${n.pubkey}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            grid.innerHTML = html;
+        }
+
+        // Render TCB
+        function renderTcb(tcb) {
+            const grid = document.getElementById('tcb-peers-grid');
+            if (grid && tcb.peers) {
+                let html = '';
+                tcb.peers.forEach(p => {
+                    html += `
+                        <div class="soc-card">
+                            <div class="soc-card-header">
+                                <div class="soc-card-title">TCB Peer ${p.id}</div>
+                                <span class="badge badge-ok">DAG ONLINE</span>
+                            </div>
+                            <div class="soc-card-body">
+                                <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+                                    <span style="color:var(--text-secondary);">Independent DAG Size</span>
+                                    <span class="mono" style="font-weight:700;">${p.dag_size} Vertices</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+                                    <span style="color:var(--text-secondary);">Consensus Mode</span>
+                                    <span class="mono" style="color:var(--accent-red-bright);">STRICT_100%</span>
+                                </div>
+                                <div style="margin-top: 8px;">
+                                    <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Peer Identity Key</div>
+                                    <div class="mono" style="font-size:10px; color:var(--accent-cyan); word-break:break-all;">${p.pubkey}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                grid.innerHTML = html;
+            }
+
+            const decTbody = document.getElementById('tbody-tcb-decisions');
+            if (decTbody && tcb.recent_verifications) {
+                let html = '';
+                tcb.recent_verifications.forEach(v => {
+                    let b = 'badge-ok';
+                    if (v.status === 'REJECTED') b = 'badge-error';
+                    if (v.status === 'ESCALATED') b = 'badge-warn';
+                    if (v.status === 'OPERATOR_VETOED') b = 'badge-error';
+                    if (v.status === 'PENDING') b = 'badge-warn';
+                    html += `
+                        <tr>
+                            <td class="mono">Node ${v.target_node}</td>
+                            <td class="mono">${v.proposed_action}</td>
+                            <td><span class="badge ${b}">${v.status}</span></td>
+                            <td class="mono">${v.quorum}</td>
+                            <td class="mono">DAG ${v.round ?? 'N/A'}</td>
+                        </tr>
+                    `;
+                });
+                decTbody.innerHTML = html;
+            }
+        }
+
+        // Render History
+        function renderHistory(records) {
+            const fullTbody = document.getElementById('tbody-history-full');
+            const ovTbody = document.getElementById('tbody-overview-events');
+
+            let fullHtml = '';
+            let ovHtml = '';
+
+            records.forEach((r, idx) => {
+                let badgeClass = 'badge-ok';
+                if (r.status.includes('REJECTED')) badgeClass = 'badge-error';
+                else if (r.status.includes('ESCALATED')) badgeClass = 'badge-warn';
+
+                const d = new Date(r.timestamp * 1000).toISOString().substring(11, 19);
+
+                fullHtml += `
+                    <tr>
+                        <td class="mono">${d}</td>
+                        <td class="mono">Node ${r.node_id}</td>
+                        <td><span class="badge badge-info">${r.category}</span></td>
+                        <td class="mono">${r.action}</td>
+                        <td style="color:var(--text-secondary);">${r.detail}</td>
+                        <td><span class="badge ${badgeClass}">${r.status}</span></td>
+                        <td class="mono" style="color:var(--accent-cyan); font-size:10px;">${r.event_id.substring(0, 16)}...</td>
+                    </tr>
+                `;
+
+                if (idx < 5) {
+                    ovHtml += `
+                        <tr>
+                            <td class="mono">${d}</td>
+                            <td class="mono">Node ${r.node_id}</td>
+                            <td class="mono">${r.action}</td>
+                            <td><span class="badge ${badgeClass}">${r.status}</span></td>
+                        </tr>
+                    `;
+                }
+            });
+
+            if (fullTbody) fullTbody.innerHTML = fullHtml || '<tr><td colspan="7">No history records found.</td></tr>';
+            if (ovTbody) ovTbody.innerHTML = ovHtml || '<tr><td colspan="4">No recent events.</td></tr>';
+        }
+
+        // Filter History
+        function filterHistory() {
+            const query = (document.getElementById('history-search').value || '').toLowerCase();
+            const filtered = appState.history.filter(r => 
+                r.action.toLowerCase().includes(query) ||
+                r.category.toLowerCase().includes(query) ||
+                r.detail.toLowerCase().includes(query) ||
+                String(r.node_id).includes(query)
+            );
+            renderHistory(filtered);
+        }
+
+        async function refreshDagAudit() {
+            const box = document.getElementById('dag-audit-summary');
+            const result = await apiGet('/api/history/dags');
+            if (!result) { box.textContent = 'TCB DAG audit endpoint is unavailable.'; return; }
+            const failed = result.peers.some(peer => peer.integrity !== 'VERIFIED');
+            const peerRows = result.peers.map(peer => `
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-color);">
+                    <span>Peer ${peer.id} · ${peer.size} vertices</span>
+                    <span class="badge ${peer.integrity === 'VERIFIED' ? 'badge-ok' : 'badge-error'}">${peer.integrity}</span>
+                </div>`).join('');
+            box.innerHTML = `<div style="margin-bottom:10px;">${result.storage} · ${result.shared_events} events present in every peer DAG · ${result.unanchored_local_events} local events missing from one or more peer DAGs · ${result.unmatched_peer_events} peer events absent from local history · ${result.missing_event_copies} missing event copies · ${result.event_append_dropped} events not recorded in all DAGs · ${result.shared_vertices} identical signed vertices · ${result.peer_specific_vertices} peer-specific vertices ${result.persistence_error ? '· STORAGE ERROR' : ''}</div>${peerRows}`;
+            if (failed) box.insertAdjacentHTML('afterbegin', '<div class="badge badge-error" style="margin-bottom:10px;">TCB DAG INTEGRITY FAILURE</div>');
+        }
+
+        // Render Incidents
+        function renderIncidents(records) {
+            const tb = document.getElementById('tbody-incidents-table');
+            if (!tb) return;
+
+            const incidents = records.filter(r => r.category === 'ACTIVE_DEFENCE' || r.category === 'GOVERNANCE');
+            document.getElementById('badge-incidents').textContent = incidents.length;
+
+            let html = '';
+            incidents.forEach(inc => {
+                let sevBadge = 'badge-error';
+                let sevLabel = 'HIGH';
+                if (inc.action.includes('REPLAY')) { sevBadge = 'badge-warn'; sevLabel = 'MEDIUM'; }
+                if (inc.action.includes('EQUIVOCATION')) { sevBadge = 'badge-error'; sevLabel = 'CRITICAL'; }
+
+                html += `
+                    <tr>
+                        <td class="mono" style="color:var(--accent-cyan);">INC-${inc.event_id.substring(0, 8)}</td>
+                        <td class="mono">${new Date(inc.timestamp * 1000).toISOString().substring(11, 19)}</td>
+                        <td class="mono">Node ${inc.node_id}</td>
+                        <td><span class="badge ${sevBadge}">${sevLabel}</span></td>
+                        <td class="mono">${inc.action}</td>
+                        <td style="color:var(--text-secondary);">${inc.detail}</td>
+                        <td><span class="badge badge-ok">VERIFIED</span></td>
+                        <td><span class="badge badge-info">${inc.status}</span></td>
+                    </tr>
+                `;
+            });
+            tb.innerHTML = html || '<tr><td colspan="8" style="text-align:center;">No incidents recorded.</td></tr>';
+        }
+
+        // Feature 2: Unanimous Trust Demonstration
+        async function runTrustDemo(scenario) {
+            const banner = document.getElementById('trust-banner');
+            const bannerText = document.getElementById('trust-banner-text');
+            const bannerBadge = document.getElementById('trust-banner-badge');
+            const govBox = document.getElementById('governance-box');
+            govBox.style.display = 'none';
+
+            banner.className = 'result-banner';
+
+            const res = await apiPost(`/api/demo/trust?scenario=${scenario}`);
+            if (!res) {
+                alert('Could not reach Sentinel server. Make sure bin/sentinel_server is running on port 8088.');
+                return;
+            }
+
+            bannerText.textContent = res.result_banner;
+
+            if (scenario === 'disagreement') {
+                banner.classList.add('denied');
+                bannerBadge.className = 'badge badge-error';
+                bannerBadge.textContent = 'AUTHORISATION DENIED';
+
+                document.getElementById('vote-peer-0').className = 'badge badge-ok';
+                document.getElementById('vote-peer-0').textContent = 'APPROVE';
+                document.getElementById('desc-peer-0').textContent = 'Evidence matched DoS flood heuristic. DAG 0 approved.';
+
+                document.getElementById('vote-peer-1').className = 'badge badge-error';
+                document.getElementById('vote-peer-1').textContent = 'REJECT (DISSENT)';
+                document.getElementById('desc-peer-1').textContent = `Rejected by Peer 1: ${res.dissent_reason}`;
+
+                document.getElementById('vote-peer-2').className = 'badge badge-warn';
+                document.getElementById('vote-peer-2').textContent = 'PENDING';
+                document.getElementById('desc-peer-2').textContent = 'Halted fail-closed. Collective unanimity broken.';
+            } else if (scenario === 'unanimous') {
+                banner.classList.add('approved');
+                bannerBadge.className = 'badge badge-ok';
+                bannerBadge.textContent = 'UNANIMOUS AUTHORISATION ACHIEVED';
+
+                for (let i = 0; i < 3; i++) {
+                    document.getElementById(`vote-peer-${i}`).className = 'badge badge-ok';
+                    document.getElementById(`vote-peer-${i}`).textContent = 'APPROVE (100%)';
+                    document.getElementById(`desc-peer-${i}`).textContent = 'Evidence cryptographically verified and committed into independent DAG.';
+                }
+            } else if (scenario === 'human') {
+                banner.classList.add('escalated');
+                bannerBadge.className = 'badge badge-warn';
+                bannerBadge.textContent = 'ESCALATED TO OPERATOR';
+                govBox.style.display = 'block';
+                appState.activeEscalationId = res.request_id;
+
+                for (let i = 0; i < 3; i++) {
+                    document.getElementById(`vote-peer-${i}`).className = 'badge badge-ok';
+                    document.getElementById(`vote-peer-${i}`).textContent = 'VERIFIED';
+                    document.getElementById(`desc-peer-${i}`).textContent = 'Equivocation proof verified. Automatic execution blocked by constitutional rule.';
+                }
+            }
+
+            // Render Timeline
+            renderTimeline('trust-timeline', res.timeline);
+            fetchLiveStatus();
+        }
+
+        // Operator Governance Sign-off
+        async function resolveGovernance(approve) {
+            if (!appState.activeEscalationId) {
+                alert('There is no active operator approval request.');
+                return;
+            }
+            const res = await apiPost(`/api/governance/resolve?request_id=${encodeURIComponent(appState.activeEscalationId)}&approve=${approve}`);
+            if (!res || res.status !== 'SUCCESS') {
+                alert(res?.error || 'The operator decision could not be recorded.');
+                return;
+            }
+            const govBox = document.getElementById('governance-box');
+            govBox.style.display = 'none';
+            appState.activeEscalationId = null;
+
+            const banner = document.getElementById('trust-banner');
+            const bannerText = document.getElementById('trust-banner-text');
+            const bannerBadge = document.getElementById('trust-banner-badge');
+
+            banner.className = 'result-banner';
+            if (approve) {
+                banner.classList.add('approved');
+                bannerText.textContent = 'OPERATOR SIGNED REVOCATION ENFORCED VIA NODE GUARD';
+                bannerBadge.className = 'badge badge-ok';
+                bannerBadge.textContent = 'EXECUTED';
+            } else {
+                banner.classList.add('denied');
+                bannerText.textContent = 'OPERATOR VETOED PROPOSED ACTION';
+                bannerBadge.className = 'badge badge-error';
+                bannerBadge.textContent = 'VETOED';
+            }
+            fetchLiveStatus();
+        }
+
+        // Feature 3: Attack Simulator
+        async function runAttackDemo(scenario) {
+            const banner = document.getElementById('attack-banner');
+            const bannerText = document.getElementById('attack-banner-text');
+            const bannerBadge = document.getElementById('attack-banner-badge');
+
+            const res = await apiPost(`/api/demo/attack?scenario=${scenario}`);
+            if (!res) return;
+
+            banner.className = 'result-banner approved';
+            bannerText.textContent = `ATTACK MITIGATED: ${res.attack}`;
+            bannerBadge.textContent = res.outcome;
+
+            renderTimeline('attack-timeline', res.timeline);
+            fetchLiveStatus();
+        }
+
+        // Feature 4: Autonomous Self-Healing
+        async function runSelfHealingDemo() {
+            const banner = document.getElementById('healing-banner');
+            const bannerText = document.getElementById('healing-banner-text');
+            const bannerBadge = document.getElementById('healing-banner-badge');
+
+            const res = await apiPost('/api/demo/self_healing');
+            if (!res) return;
+
+            banner.className = `result-banner ${res.reachable ? 'approved' : 'escalated'}`;
+            bannerText.textContent = res.reachable
+                ? `NODE ${res.recovered_node} TCP LISTENER IS REACHABLE`
+                : `RECOVERY PENDING: NODE ${res.recovered_node} DID NOT RESPOND`;
+            bannerBadge.className = `badge ${res.reachable ? 'badge-ok' : 'badge-warn'}`;
+            bannerBadge.textContent = res.reachable ? 'REACHABLE' : 'PENDING';
+
+            renderTimeline('healing-timeline', res.timeline);
+            fetchLiveStatus();
+        }
+
+        // Timeline Builder
+        function renderTimeline(elementId, steps) {
+            const list = document.getElementById(elementId);
+            if (!list || !steps) return;
+
+            let html = '';
+            steps.forEach(st => {
+                html += `
+                    <li class="timeline-item">
+                        <div class="timeline-label">Step ${st.step}: ${st.label}</div>
+                        <div class="timeline-desc">${st.desc}</div>
+                    </li>
+                `;
+            });
+            list.innerHTML = html;
+        }
+
+        // Initial Load and Auto-Polling
+        fetchLiveStatus();
+        setInterval(fetchLiveStatus, 3000);
     </script>
 </body>
 </html>
