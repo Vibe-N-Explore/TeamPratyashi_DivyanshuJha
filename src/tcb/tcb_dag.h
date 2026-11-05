@@ -22,7 +22,8 @@ typedef enum {
     TCB_VTX_DECISION      = 2,
     TCB_VTX_AUTHORISATION = 3,
     TCB_VTX_ESCALATION    = 4,
-    TCB_VTX_HUMAN_RESOLVE = 5
+    TCB_VTX_HUMAN_RESOLVE = 5,
+    TCB_VTX_SECURITY_EVENT = 6
 } sc_tcb_vtx_type_t;
 
 typedef struct {
@@ -60,6 +61,11 @@ sc_err_t tcb_dag_insert_peer_vertex(sc_tcb_dag_t *dag,
 /* Find a vertex by its hash */
 const sc_tcb_vertex_t *tcb_dag_get(const sc_tcb_dag_t *dag,
                                    const uint8_t hash[SC_SHA256_LEN]);
+const sc_tcb_vertex_t *tcb_dag_at(const sc_tcb_dag_t *dag, size_t index);
+
+/* Versioned snapshot persistence; loading verifies every vertex signature/hash. */
+sc_err_t tcb_dag_save_file(const sc_tcb_dag_t *dag, const char *path);
+sc_err_t tcb_dag_load_file(sc_tcb_dag_t *dag, const char *path);
 
 /* Verify cryptographic integrity of entire DAG history */
 sc_err_t tcb_dag_verify_integrity(const sc_tcb_dag_t *dag);

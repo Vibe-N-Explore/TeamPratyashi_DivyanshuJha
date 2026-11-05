@@ -36,6 +36,7 @@
 #define SC_MAX_NODES   16
 #define SC_MAX_HOST    64
 #define SC_MAX_PATH    256
+#define SC_NODE_METRICS_PORT_OFFSET 10000
 
 /* Raw 32-byte Ed25519 public key. Zero-initialised means "not set". */
 #define SC_ED25519_PUBKEY_LEN 32

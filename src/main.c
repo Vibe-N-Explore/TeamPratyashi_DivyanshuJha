@@ -15,6 +15,8 @@
 
 #include <arpa/inet.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <inttypes.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -75,6 +77,9 @@ typedef struct {
     sc_consensus_t     *consensus;
     char                data_dir[SC_MAX_PATH];
     uint64_t            current_round;
+    uint64_t            messages_received;
+    uint64_t            transactions_accepted;
+    uint64_t            start_time_s;
 } sc_node_ctx_t;
 
 static void pack_u32_be(uint8_t *dest, uint32_t val)
@@ -172,6 +177,7 @@ static void on_message(int from_node_id, uint16_t type,
     sc_node_ctx_t *ctx = (sc_node_ctx_t *)user;
     if (!ctx)
         return;
+    ctx->messages_received++;
 
     if (type == MSG_TYPE_TEST) {
         char safe_payload[256];
@@ -185,6 +191,7 @@ static void on_message(int from_node_id, uint16_t type,
         if (tx_deserialize(&tx, payload, len) == SC_OK) {
             bool added = false;
             if (mempool_add(ctx->mempool, &tx, &added) == SC_OK && added) {
+                ctx->transactions_accepted++;
                 log_eventf(LOG_INFO, "mempool", "recv_tx",
                            "from=%d amount=%llu fee=%llu nonce=%llu",
                            from_node_id, (unsigned long long)tx.amount,
@@ -302,6 +309,58 @@ static sc_err_t open_listener(const node_info_t *me, int *fd_out, char *errbuf,
     }
     *fd_out = fd;
     return SC_OK;
+}
+
+static sc_err_t open_metrics_listener(const node_info_t *me, int *fd_out)
+{
+    if (!me || me->port > UINT16_MAX - SC_NODE_METRICS_PORT_OFFSET) return SC_ERR_INVALID;
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd < 0) return SC_ERR_IO;
+    int one = 1;
+    (void)setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons((uint16_t)(me->port + SC_NODE_METRICS_PORT_OFFSET));
+    if (inet_pton(AF_INET, me->host, &addr.sin_addr) != 1 || bind(fd, (struct sockaddr *)&addr, sizeof(addr)) != 0 || listen(fd, 8) != 0) {
+        close(fd);
+        return SC_ERR_IO;
+    }
+    int flags = fcntl(fd, F_GETFL, 0);
+    if (flags < 0 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) {
+        close(fd);
+        return SC_ERR_IO;
+    }
+    *fd_out = fd;
+    return SC_OK;
+}
+
+static void serve_metrics_request(sc_node_ctx_t *ctx, int listen_fd)
+{
+    int fd = accept(listen_fd, NULL, NULL);
+    if (fd < 0) return;
+    int flags = fcntl(fd, F_GETFL, 0);
+    if (flags < 0 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) { close(fd); return; }
+    char request[512];
+    ssize_t n = recv(fd, request, sizeof(request) - 1, 0);
+    if (n > 0) {
+        request[n] = '\0';
+        if (strncmp(request, "GET /metrics ", 13) == 0) {
+            char body[512], response[768];
+            int body_len = snprintf(body, sizeof(body),
+                "{\"node_id\":%d,\"uptime_s\":%" PRIu64 ",\"authenticated_peers\":%zu,\"messages_received\":%" PRIu64 ",\"transactions_accepted\":%" PRIu64 ",\"consensus_round\":%" PRIu64 "}",
+                ctx->node_id, (uint64_t)time(NULL) - ctx->start_time_s,
+                net_connected_count(ctx->net), ctx->messages_received,
+                ctx->transactions_accepted, ctx->current_round);
+            if (body_len > 0 && (size_t)body_len < sizeof(body)) {
+                int response_len = snprintf(response, sizeof(response),
+                    "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %d\r\nConnection: close\r\n\r\n%s",
+                    body_len, body);
+                if (response_len > 0 && (size_t)response_len < sizeof(response)) (void)send(fd, response, (size_t)response_len, 0);
+            }
+        }
+    }
+    close(fd);
 }
 
 int main(int argc, char **argv)
@@ -444,6 +503,19 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
+    int metrics_fd = -1;
+    rc = open_metrics_listener(me, &metrics_fd);
+    if (rc != SC_OK) {
+        log_eventf(LOG_ERROR, "metrics", "listen_error", "port=%u", (unsigned)me->port + SC_NODE_METRICS_PORT_OFFSET);
+        close(listen_fd);
+        consensus_free(cons);
+        dag_free(dag);
+        mempool_free(mempool);
+        ledger_free(ledger);
+        crypto_keypair_free(my_kp);
+        return EXIT_FAILURE;
+    }
+
     sc_node_ctx_t ctx = {
         .node_id = me->id,
         .net_cfg = net_cfg,
@@ -453,7 +525,8 @@ int main(int argc, char **argv)
         .mempool = mempool,
         .dag = dag,
         .consensus = cons,
-        .current_round = 0
+        .current_round = 0,
+        .start_time_s = (uint64_t)time(NULL)
     };
     snprintf(ctx.data_dir, sizeof(ctx.data_dir), "%s", cfg.data_dir);
 
@@ -463,6 +536,7 @@ int main(int argc, char **argv)
         log_eventf(LOG_ERROR, "net", "init_error",
                    "code=%s detail=\"%s\"", sc_err_str(rc), err);
         close(listen_fd);
+        close(metrics_fd);
         consensus_free(cons);
         dag_free(dag);
         mempool_free(mempool);
@@ -483,6 +557,7 @@ int main(int argc, char **argv)
             log_eventf(LOG_ERROR, "net", "poll_error", "code=%s", sc_err_str(rc));
             break;
         }
+        serve_metrics_request(&ctx, metrics_fd);
 
         propose_vertex_if_needed(&ctx);
 
@@ -516,6 +591,7 @@ int main(int argc, char **argv)
 
                     bool added = false;
                     mempool_add(mempool, &tx, &added);
+                    if (added) ctx.transactions_accepted++;
 
                     net_send(net, tx_target_id, MSG_TYPE_TX, tx_buf, written);
                     log_eventf(LOG_INFO, "tx", "sent_tx",
@@ -531,6 +607,7 @@ int main(int argc, char **argv)
     log_eventf(LOG_INFO, "main", "shutdown", "signal=%d", (int)g_stop_signal);
     net_shutdown(net);
     close(listen_fd);
+    close(metrics_fd);
     consensus_free(cons);
     dag_free(dag);
     mempool_free(mempool);
