@@ -63,6 +63,10 @@ OpenSSL. Its major subsystems are:
     fees, and state-root hashing.
 -   **Persistence:** checksummed state snapshots and crash-recovery
     support.
+-   **Security Subsystem & Distributed TCB Network:** multi-peer independent
+    DAG consensus, deterministic policy enforcement, AI security agent telemetry,
+    and human operator governance escalation (see [Distributed TCB Protocol](docs/DISTRIBUTED_TCB_PROTOCOL.md)
+    and [Strategic Integration Vision](docs/SOVEREIGNCHAIN_STRATEGIC_INTEGRATION_VISION.md)).
 
 The root `config/` is the six-node harness described in the existing
 project docs: two validator roles and four normal-node identities. The
@@ -125,7 +129,9 @@ until those gaps have been fixed and tested.
 │   ├── dag.*                   # DAG vertex representation and storage
 │   ├── consensus.*             # Validator voting and certification
 │   ├── ledger.*                # Deterministic account ledger
-│   └── storage.*               # Persistent chain state
+│   ├── storage.*               # Persistent chain state
+│   ├── security/               # Telemetry, incident detection, node guard
+│   └── tcb/                    # Distributed TCB consensus, DAG, policy engine
 ├── tests/
 │   ├── unit/                   # Chain unit tests
 │   └── integration/            # Multi-process integration tests
