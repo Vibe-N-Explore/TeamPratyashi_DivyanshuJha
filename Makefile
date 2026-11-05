@@ -17,7 +17,8 @@ OPENSSL_LIBS   := $(shell pkg-config --libs   openssl 2>/dev/null || echo "-lssl
 # All phases: config, log, crypto, net, tx, ledger, storage, mempool, dag, consensus, security & TCB.
 LIB_SRC := src/config.c src/log.c src/crypto.c src/net.c src/tx.c src/ledger.c src/storage.c src/mempool.c src/dag.c src/consensus.c \
            src/security/incident.c src/security/sec_agent.c src/security/node_guard.c \
-           src/tcb/decision.c src/tcb/tcb_policy.c src/tcb/tcb_dag.c src/tcb/tcb_peer.c
+           src/tcb/decision.c src/tcb/tcb_policy.c src/tcb/tcb_dag.c src/tcb/tcb_peer.c \
+           src/sentinel_server.c
 HEADERS := $(wildcard src/*.h) $(wildcard src/security/*.h) $(wildcard src/tcb/*.h)
 
 UNIT_SRC  := $(wildcard tests/unit/test_*.c)
@@ -25,7 +26,7 @@ UNIT_BINS := $(patsubst tests/unit/%.c,build/%,$(UNIT_SRC))
 
 .PHONY: all test test-unit test-integration clean
 
-all: bin/node bin/injector bin/sec_agent bin/tcb_peer
+all: bin/node bin/injector bin/sec_agent bin/tcb_peer bin/sentinel_server
 
 bin/node: src/main.c $(LIB_SRC) $(HEADERS)
 	@mkdir -p bin
@@ -42,6 +43,10 @@ bin/sec_agent: src/sec_agent_main.c $(LIB_SRC) $(HEADERS)
 bin/tcb_peer: src/tcb_main.c $(LIB_SRC) $(HEADERS)
 	@mkdir -p bin
 	$(CC) $(CFLAGS) $(OPENSSL_CFLAGS) -o $@ src/tcb_main.c $(LIB_SRC) $(OPENSSL_LIBS)
+
+bin/sentinel_server: src/sentinel_main.c $(LIB_SRC) $(HEADERS)
+	@mkdir -p bin
+	$(CC) $(CFLAGS) $(OPENSSL_CFLAGS) -o $@ src/sentinel_main.c $(LIB_SRC) $(OPENSSL_LIBS)
 
 # Unit tests: built with AddressSanitizer + UBSan.
 # test_crypto links OpenSSL; other tests don't (the rule is general).
@@ -63,6 +68,7 @@ test-integration: bin/node bin/injector bin/sec_agent bin/tcb_peer
 	bash tests/integration/phase8.sh
 	bash tests/integration/phase9.sh
 	bash tests/integration/phase_security_tcb.sh
+	bash tests/integration/phase_sentinel.sh
 
 test: test-unit test-integration
 

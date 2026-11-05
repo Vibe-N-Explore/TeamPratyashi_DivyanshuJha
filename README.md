@@ -67,6 +67,9 @@ OpenSSL. Its major subsystems are:
     DAG consensus, deterministic policy enforcement, AI security agent telemetry,
     and human operator governance escalation (see [Distributed TCB Protocol](docs/DISTRIBUTED_TCB_PROTOCOL.md)
     and [Strategic Integration Vision](docs/SOVEREIGNCHAIN_STRATEGIC_INTEGRATION_VISION.md)).
+-   **Sentinel Security Control Room:** local node metrics, TCB approval
+    demonstrations, bounded recovery checks, and persistent signed TCB
+    DAG snapshots (see [Sentinel Operations](docs/SENTINEL_OPERATIONS.md)).
 
 The root `config/` is the six-node harness described in the existing
 project docs: two validator roles and four normal-node identities. The
