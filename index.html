@@ -1,0 +1,2805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SovereignChain // Project Sentinel — Security Operations Center</title>
+    <style>
+        :root {
+            --bg-base: #07090e;
+            --bg-surface: #0e121a;
+            --bg-surface-elevated: #161c27;
+            --border-color: #1f2738;
+            --border-highlight: #2f3a52;
+            
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #484f58;
+            
+            --accent-red: #c8102e;
+            --accent-red-bright: #ff2a4b;
+            --accent-red-glow: rgba(200, 16, 46, 0.35);
+            --accent-blue: #388bfd;
+            --accent-cyan: #39c5cf;
+            
+            --status-ok: #2ea043;
+            --status-ok-glow: rgba(46, 160, 67, 0.4);
+            --status-warn: #d29922;
+            --status-error: #f85149;
+            --status-error-glow: rgba(248, 81, 73, 0.4);
+            --status-info: #58a6ff;
+            
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 13px;
+            line-height: 1.5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .mono { font-family: var(--font-mono); }
+
+        /* Top Institutional Header */
+        header {
+            height: 54px;
+            background: linear-gradient(180deg, #121622 0%, #0a0d14 100%);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 100;
+        }
+
+        .brand-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            width: 28px;
+            height: 28px;
+            background: radial-gradient(circle, var(--accent-red-bright) 10%, var(--accent-red) 70%, transparent 100%);
+            border-radius: 4px;
+            border: 1px solid var(--accent-red);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 12px var(--accent-red-glow);
+        }
+
+        .brand-logo svg {
+            width: 16px;
+            height: 16px;
+            fill: #ffffff;
+        }
+
+        .brand-title {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-subtitle {
+            font-size: 11px;
+            color: var(--accent-red-bright);
+            letter-spacing: 1px;
+            background: rgba(200, 16, 46, 0.15);
+            border: 1px solid rgba(200, 16, 46, 0.3);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .header-meta {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            font-family: var(--font-mono);
+            letter-spacing: 0.5px;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--status-ok);
+            box-shadow: 0 0 8px var(--status-ok-glow);
+            animation: pulse-green 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse-green {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.85); }
+        }
+
+        .pulse-dot.error {
+            background: var(--status-error);
+            box-shadow: 0 0 8px var(--status-error-glow);
+            animation: pulse-red 1s infinite;
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Layout Framework */
+        .soc-layout {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 54px);
+            overflow: hidden;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 250px;
+            background: var(--bg-surface);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .nav-section-title {
+            padding: 14px 16px 6px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--text-muted);
+            font-weight: 700;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            transition: all 0.15s ease;
+            font-weight: 500;
+            font-size: 12px;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: linear-gradient(90deg, rgba(200, 16, 46, 0.15) 0%, transparent 100%);
+            border-left-color: var(--accent-red-bright);
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .nav-item svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+            opacity: 0.8;
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            background: var(--bg-surface-elevated);
+            color: var(--text-muted);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-family: var(--font-mono);
+        }
+
+        .nav-badge.danger {
+            background: rgba(248, 81, 73, 0.2);
+            color: var(--status-error);
+            border: 1px solid rgba(248, 81, 73, 0.3);
+        }
+
+        /* Main View Workspace */
+        .workspace {
+            flex: 1;
+            background: var(--bg-base);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .view-panel {
+            display: none;
+            padding: 24px 28px;
+            flex-direction: column;
+            gap: 20px;
+            min-height: 100%;
+        }
+
+        .view-panel.active {
+            display: flex;
+        }
+
+        /* Common Page Header */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 14px;
+        }
+
+        .page-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.5px;
+        }
+
+        .page-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        /* Top Metric Cards Bar */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+        }
+
+        .kpi-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 14px 16px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+
+        .kpi-card:hover {
+            border-color: var(--border-highlight);
+        }
+
+        .kpi-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 100%;
+            background: var(--accent-red);
+        }
+
+        .kpi-card.blue::before { background: var(--accent-blue); }
+        .kpi-card.green::before { background: var(--status-ok); }
+        .kpi-card.warn::before { background: var(--status-warn); }
+
+        .kpi-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-secondary);
+        }
+
+        .kpi-val {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-top: 4px;
+            font-family: var(--font-mono);
+        }
+
+        .kpi-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Panels and Cards */
+        .soc-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .soc-card-header {
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .soc-card-title {
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .soc-card-body {
+            padding: 16px;
+        }
+
+        /* Topology Visualizer */
+        .topology-container {
+            width: 100%;
+            height: 380px;
+            background: radial-gradient(circle at center, #101626 0%, #080a10 70%);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .topology-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Status Pills & Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            font-family: var(--font-mono);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .badge-ok {
+            background: rgba(46, 160, 67, 0.15);
+            color: #3fb950;
+            border: 1px solid rgba(46, 160, 67, 0.3);
+        }
+
+        .badge-warn {
+            background: rgba(210, 153, 34, 0.15);
+            color: #d29922;
+            border: 1px solid rgba(210, 153, 34, 0.3);
+        }
+
+        .badge-error {
+            background: rgba(248, 81, 73, 0.15);
+            color: #f85149;
+            border: 1px solid rgba(248, 81, 73, 0.3);
+        }
+
+        .badge-info {
+            background: rgba(56, 139, 253, 0.15);
+            color: #58a6ff;
+            border: 1px solid rgba(56, 139, 253, 0.3);
+        }
+
+        .badge-purple {
+            background: rgba(188, 140, 255, 0.15);
+            color: #d2a8ff;
+            border: 1px solid rgba(188, 140, 255, 0.3);
+        }
+
+        /* Tables */
+        .soc-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .soc-table th {
+            text-align: left;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.02);
+            color: var(--text-secondary);
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 0.8px;
+        }
+
+        .soc-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(31, 39, 56, 0.5);
+            color: var(--text-primary);
+        }
+
+        .soc-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Interactive Demo Controls */
+        .demo-bar {
+            background: var(--bg-surface-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .btn {
+            background: var(--bg-surface-elevated);
+            color: #ffffff;
+            border: 1px solid var(--border-highlight);
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            border-color: #58a6ff;
+            background: #1f2738;
+        }
+
+        .btn-danger {
+            background: var(--accent-red);
+            border-color: var(--accent-red-bright);
+        }
+
+        .btn-danger:hover {
+            background: #a00d24;
+            box-shadow: 0 0 10px var(--accent-red-glow);
+        }
+
+        .btn-success {
+            background: #238636;
+            border-color: #2ea043;
+        }
+
+        .btn-success:hover {
+            background: #2ea043;
+        }
+
+        /* Banner Result Callouts */
+        .result-banner {
+            padding: 16px 20px;
+            border-radius: 6px;
+            margin-top: 16px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        .result-banner.denied {
+            display: flex;
+            background: linear-gradient(90deg, rgba(200, 16, 46, 0.25) 0%, rgba(200, 16, 46, 0.05) 100%);
+            border: 1px solid var(--accent-red-bright);
+            color: #ff6b81;
+        }
+
+        .result-banner.approved {
+            display: flex;
+            background: linear-gradient(90deg, rgba(46, 160, 67, 0.25) 0%, rgba(46, 160, 67, 0.05) 100%);
+            border: 1px solid #3fb950;
+            color: #56d364;
+        }
+
+        .result-banner.escalated {
+            display: flex;
+            background: linear-gradient(90deg, rgba(210, 153, 34, 0.25) 0%, rgba(210, 153, 34, 0.05) 100%);
+            border: 1px solid #d29922;
+            color: #e3b341;
+        }
+
+        /* Execution Timeline Component */
+        .timeline-list {
+            list-style: none;
+            margin-top: 16px;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .timeline-list::before {
+            content: "";
+            position: absolute;
+            top: 8px;
+            bottom: 8px;
+            left: 7px;
+            width: 2px;
+            background: var(--border-color);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-bottom: 16px;
+        }
+
+        .timeline-item::before {
+            content: "";
+            position: absolute;
+            left: -17px;
+            top: 4px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            border: 2px solid var(--bg-surface);
+        }
+
+        .timeline-label {
+            font-weight: 600;
+            color: #ffffff;
+            font-size: 12px;
+        }
+
+        .timeline-desc {
+            color: var(--text-secondary);
+            font-size: 11px;
+            margin-top: 2px;
+        }
+
+        /* Filter & Search Bar */
+        .search-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 8px 12px;
+            color: var(--text-primary);
+            font-size: 12px;
+            width: 280px;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        /* Split 2-col Grid */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="brand-group">
+            <div class="brand-logo">
+                <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l7 3.12v4.7c0 4.67-3.13 9.04-7 10.15-3.87-1.11-7-5.48-7-10.15V6.3l7-3.12zM11 7h2v6h-2zm0 8h2v2h-2z"/></svg>
+            </div>
+            <div class="brand-title">
+                SovereignChain
+                <span class="brand-subtitle">Project Sentinel SOC</span>
+            </div>
+        </div>
+
+        <div class="header-meta">
+            <div class="live-indicator">
+                <div class="pulse-dot" id="live-dot"></div>
+                <span id="live-status-text">CONNECTING TO SENTINEL ENGINE...</span>
+            </div>
+            <div class="mono" id="clock" style="font-size: 11px; color: var(--text-secondary);">--:--:-- UTC</div>
+        </div>
+    </header>
+
+    <!-- App Body -->
+    <div class="soc-layout">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="nav-section-title">Control & Intelligence</div>
+            <div class="nav-item active" onclick="switchView('overview')">
+                <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                Control Room
+            </div>
+            <div class="nav-item" onclick="switchView('network')">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                Network Topology
+                <span class="nav-badge" id="badge-node-count">6</span>
+            </div>
+            <div class="nav-item" onclick="switchView('tcb')">
+                <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                TCB Peer DAGs
+                <span class="nav-badge" id="badge-tcb-count">3 Peers</span>
+            </div>
+            <div class="nav-item" onclick="switchView('agent')">
+                <svg viewBox="0 0 24 24"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.38-1 1.72V7h4a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h4V5.72A2.001 2.001 0 0 1 10 4a2 2 0 0 1 2-2m-3 8a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1 1 1 0 0 0 1-1v-1a1 1 0 0 0-1-1m6 0a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1 1 1 0 0 0 1-1v-1a1 1 0 0 0-1-1m-7 5v2h8v-2H8z"/></svg>
+                AI Security Agent
+            </div>
+
+            <div class="nav-section-title">Sentinel Demonstrations</div>
+            <div class="nav-item" onclick="switchView('trust')">
+                <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3.45l8.27 14.3H3.73L12 5.45zM11 10v4h2v-4h-2zm0 6v2h2v-2h-2z"/></svg>
+                Unanimous Trust
+            </div>
+            <div class="nav-item" onclick="switchView('attack')">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                Attack Simulator
+            </div>
+            <div class="nav-item" onclick="switchView('self-healing')">
+                <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                Self-Healing
+            </div>
+
+            <div class="nav-section-title">Audit & Forensics</div>
+            <div class="nav-item" onclick="switchView('history')">
+                <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+                Security Memory
+                <span class="nav-badge" id="badge-history-count">--</span>
+            </div>
+            <div class="nav-item" onclick="switchView('incidents')">
+                <svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                Incident Centre
+                <span class="nav-badge danger" id="badge-incidents">0</span>
+            </div>
+
+            <div class="nav-section-title">Decentralized Computing</div>
+            <div class="nav-item" onclick="switchView('marketplace-overview')">
+                <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12zm-7-2h2v-4h4V8h-4V4h-2v4H9v2h4v4z"/></svg>
+                Marketplace Overview
+            </div>
+            <div class="nav-item" onclick="switchView('marketplace-browse')">
+                <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4V8l8 5 8-5v10zm-8-7L4 6h16l-8 5z"/></svg>
+                Computing Tasks
+                <span class="nav-badge" id="badge-mp-tasks">0</span>
+            </div>
+            <div class="nav-item" onclick="switchView('marketplace-submit')">
+                <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                Submit Task
+            </div>
+            <div class="nav-item" onclick="switchView('marketplace-providers')">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+                Provider Network
+                <span class="nav-badge" id="badge-mp-providers">3</span>
+            </div>
+            <div class="nav-item" onclick="switchView('marketplace-register')">
+                <svg viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                Become Provider
+            </div>
+            <div class="nav-item" onclick="switchView('marketplace-reputation')">
+                <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                Reputation SLA
+            </div>
+
+            <div class="nav-section-title">Post-Quantum Cryptography</div>
+            <div class="nav-item" onclick="switchView('pqc-dashboard')">
+                <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+                Post-Quantum Security
+                <span class="nav-badge" style="background: rgba(57, 197, 207, 0.2); color: var(--accent-cyan); border: 1px solid rgba(57, 197, 207, 0.4);">PQC READY</span>
+            </div>
+        </nav>
+
+        <!-- Workspace View Panels -->
+        <main class="workspace">
+
+            <!-- 1. OVERVIEW / CONTROL ROOM -->
+            <div id="view-overview" class="view-panel active">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Sovereign Security Control Room</div>
+                        <div class="page-desc">Real-time telemetry, distributed consensus health, and AI threat mitigation</div>
+                    </div>
+                    <button class="btn" onclick="fetchLiveStatus()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                        Refresh SOC
+                    </button>
+                </div>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card green">
+                        <div class="kpi-label">Network Status</div>
+                        <div class="kpi-val" id="kpi-status">UNKNOWN</div>
+                        <div class="kpi-sub">BFT consensus active</div>
+                    </div>
+                    <div class="kpi-card blue">
+                        <div class="kpi-label">Active Nodes</div>
+                        <div class="kpi-val" id="kpi-nodes">6 / 6</div>
+                        <div class="kpi-sub">4 Validators · 2 Observers</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Distributed TCB</div>
+                        <div class="kpi-val" id="kpi-tcb">3 / 3 PEERS</div>
+                        <div class="kpi-sub">Strict 100% Unanimity</div>
+                    </div>
+                    <div class="kpi-card warn">
+                        <div class="kpi-label">Consensus Round</div>
+                        <div class="kpi-val" id="kpi-round">42</div>
+                        <div class="kpi-sub" id="kpi-txs">Total Txs: 1,420</div>
+                    </div>
+                </div>
+
+                <!-- Network Radar Topology -->
+                <div class="soc-card">
+                    <div class="soc-card-header">
+                        <div class="soc-card-title">
+                            <span class="pulse-dot"></span>
+                            Live Network Radar & Cryptographic Topology
+                        </div>
+                        <span class="badge badge-ok">All Rings Synchronized</span>
+                    </div>
+                    <div class="soc-card-body" style="padding: 10px;">
+                        <div class="topology-container">
+                            <svg class="topology-svg" id="radar-svg" viewBox="0 0 800 360">
+                                <defs>
+                                    <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#388bfd" stop-opacity="0.6"/>
+                                        <stop offset="100%" stop-color="#c8102e" stop-opacity="0.6"/>
+                                    </linearGradient>
+                                </defs>
+                                <!-- Topology rendered via JS -->
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Split Recent Activity -->
+                <div class="grid-2">
+                    <div class="soc-card">
+                        <div class="soc-card-header">
+                            <div class="soc-card-title">Distributed TCB Consensus Policy</div>
+                            <span class="badge badge-purple">UNANIMITY RULE</span>
+                        </div>
+                        <div class="soc-card-body">
+                            <p style="color: var(--text-secondary); margin-bottom: 12px; font-size: 12px;">
+                                Project Sentinel enforces cryptographic non-repudiation across all autonomous security actions.
+                                An action is bounded and authorized <strong>only if 100% of configured TCB peers</strong> reach unanimous agreement.
+                            </p>
+                            <table class="soc-table">
+                                <thead>
+                                    <tr><th>Action Type</th><th>Category</th><th>Quorum Required</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>TEMP_QUARANTINE</td><td><span class="badge badge-ok">AUTO_PERMITTED</span></td><td>100% TCB Peers (3/3)</td></tr>
+                                    <tr><td>RATE_LIMIT_RESTRICT</td><td><span class="badge badge-ok">AUTO_PERMITTED</span></td><td>100% TCB Peers (3/3)</td></tr>
+                                    <tr><td>REVOKE_VALIDATOR</td><td><span class="badge badge-error">HUMAN_REQUIRED</span></td><td>3/3 TCB + Operator Ed25519</td></tr>
+                                    <tr><td>CHANGE_VALIDATORS</td><td><span class="badge badge-error">HUMAN_REQUIRED</span></td><td>3/3 TCB + Governance Multisig</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="soc-card">
+                        <div class="soc-card-header">
+                            <div class="soc-card-title">Recent Security Telemetry Events</div>
+                            <span class="badge badge-info" id="badge-latest-events">LIVE STREAM</span>
+                        </div>
+                        <div class="soc-card-body" style="padding: 0;">
+                            <table class="soc-table">
+                                <thead>
+                                    <tr><th>Time</th><th>Node</th><th>Action</th><th>TCB Status</th></tr>
+                                </thead>
+                                <tbody id="tbody-overview-events">
+                                    <tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Loading events...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. NETWORK TOPOLOGY VIEW -->
+            <div id="view-network" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Blockchain Nodes & Connectivity</div>
+                        <div class="page-desc">Cryptographic identity, ping latency, and role assignments across the mesh</div>
+                    </div>
+                </div>
+                <div class="grid-3" id="nodes-grid">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- 3. TCB MONITOR VIEW -->
+            <div id="view-tcb" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Distributed TCB Peer Network</div>
+                        <div class="page-desc">Independent DAG ledgers and cryptographic vote aggregation</div>
+                    </div>
+                    <span class="badge badge-ok">3/3 PEERS SYNCHRONIZED</span>
+                </div>
+                <div class="grid-3" id="tcb-peers-grid">
+                    <!-- Populated dynamically via JS -->
+                </div>
+                <div class="soc-card">
+                    <div class="soc-card-header">
+                        <div class="soc-card-title">Recent TCB Verification Decisions</div>
+                    </div>
+                    <div class="soc-card-body" style="padding: 0;">
+                        <table class="soc-table">
+                            <thead>
+                                <tr><th>Target Node</th><th>Proposed Action</th><th>Verdict</th><th>Quorum State</th><th>DAG Round</th></tr>
+                            </thead>
+                            <tbody id="tbody-tcb-decisions">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 10. MARKETPLACE OVERVIEW -->
+            <div id="view-marketplace-overview" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Decentralized Computing Marketplace</div>
+                        <div class="page-desc">Peer-to-peer compute capacity coordination, off-chain workloads, and escrow settlement</div>
+                    </div>
+                    <button class="btn btn-primary" onclick="switchView('marketplace-submit')">
+                        + Submit Computing Task
+                    </button>
+                </div>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card green">
+                        <div class="kpi-label">Marketplace Status</div>
+                        <div class="kpi-val" id="mp-kpi-status">OPERATIONAL</div>
+                        <div class="kpi-sub">Trustless settlement active</div>
+                    </div>
+                    <div class="kpi-card blue">
+                        <div class="kpi-label">Compute Providers</div>
+                        <div class="kpi-val" id="mp-kpi-providers">3 Active</div>
+                        <div class="kpi-sub" id="mp-kpi-specs">112 Cores · 3 GPUs · 224 GB RAM</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Active Workloads</div>
+                        <div class="kpi-val" id="mp-kpi-tasks">--</div>
+                        <div class="kpi-sub" id="mp-kpi-completed">-- Completed & Settled</div>
+                    </div>
+                    <div class="kpi-card purple">
+                        <div class="kpi-label">Escrow Volume</div>
+                        <div class="kpi-val" id="mp-kpi-escrow">-- SOV</div>
+                        <div class="kpi-sub" id="mp-kpi-settled-vol">-- SOV settled to date</div>
+                    </div>
+                </div>
+
+                <div class="grid-2" style="margin-top: 16px;">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Supported Computing Workloads</div>
+                            <span class="tag tag-blue">Deterministic Proofs</span>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+                            <div style="background: var(--bg-surface-elevated); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color);">
+                                <div style="display: flex; justify-content: space-between; font-weight: 600;">
+                                    <span>🧠 AI Inference (MLP Forward Pass)</span>
+                                    <span class="tag tag-green">Cross-Validated</span>
+                                </div>
+                                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
+                                    Deep learning forward inference with ReLU activations, Softmax distribution, and cosine similarity.
+                                </div>
+                            </div>
+                            <div style="background: var(--bg-surface-elevated); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color);">
+                                <div style="display: flex; justify-content: space-between; font-weight: 600;">
+                                    <span>🖼️ Computer Vision (Sobel Edge Detection)</span>
+                                    <span class="tag tag-blue">Kernel Proof</span>
+                                </div>
+                                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
+                                    High-performance 3x3 convolution filtering, gradient energy mapping, and cryptographic digest verification.
+                                </div>
+                            </div>
+                            <div style="background: var(--bg-surface-elevated); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color);">
+                                <div style="display: flex; justify-content: space-between; font-weight: 600;">
+                                    <span>📊 Financial & Transactional Data Analytics</span>
+                                    <span class="tag tag-yellow">Statistical Sampling</span>
+                                </div>
+                                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
+                                    Distributed aggregations, variance bounds, standard deviation, and anomaly isolation.
+                                </div>
+                            </div>
+                            <div style="background: var(--bg-surface-elevated); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color);">
+                                <div style="display: flex; justify-content: space-between; font-weight: 600;">
+                                    <span>⚡ High-Performance Matrix Algebra</span>
+                                    <span class="tag tag-green">Ground-Truth Reference</span>
+                                </div>
+                                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
+                                    Matrix dot-product multiplication benchmark, trace invariant check, and dual execution.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Live Marketplace Activity</div>
+                            <button class="btn btn-sm" onclick="fetchMarketplaceData()">Refresh</button>
+                        </div>
+                        <div id="mp-overview-activity" style="display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto;">
+                            <!-- Activity stream populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 11. BROWSE COMPUTING TASKS -->
+            <div id="view-marketplace-browse" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Computing Tasks & Execution Lifecycle</div>
+                        <div class="page-desc">Track tasks across discovery, matching, isolated execution, proof verification, and settlement</div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-primary" onclick="switchView('marketplace-submit')">+ New Task</button>
+                        <button class="btn" onclick="fetchMarketplaceTasks()">Refresh</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="table-container">
+                        <table class="soc-table">
+                            <thead>
+                                <tr><th>Task ID</th><th>Title</th><th>Workload</th><th>Req CPU/RAM</th><th>Budget (SOV)</th><th>Provider</th><th>Status</th><th>Actions</th></tr>
+                            </thead>
+                            <tbody id="tbody-mp-tasks">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Interactive Task Workflow Panel -->
+                <div id="mp-task-workflow-panel" class="card" style="margin-top: 16px; display: none;">
+                    <div class="card-header">
+                        <div class="card-title" id="mp-workflow-title">Task Workflow: [ID]</div>
+                        <button class="btn btn-sm" onclick="document.getElementById('mp-task-workflow-panel').style.display='none'">Close</button>
+                    </div>
+                    <div class="grid-2" style="margin-top: 12px;">
+                        <div>
+                            <div style="font-weight: 600; margin-bottom: 8px;">Step 1: Provider Match & Allocation</div>
+                            <div id="mp-match-results" style="display: flex; flex-direction: column; gap: 8px;">
+                                <!-- Matches dynamically rendered -->
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-weight: 600; margin-bottom: 8px;">Step 2: Execution, Verification & Settlement</div>
+                            <div style="background: var(--bg-surface-elevated); padding: 14px; border-radius: 6px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 10px;">
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <button class="btn btn-primary" id="btn-wf-execute" onclick="triggerTaskExecute(false)">⚡ Execute Off-Chain</button>
+                                    <button class="btn btn-danger" id="btn-wf-fraud" onclick="triggerTaskExecute(true)">⚠️ Simulate Provider Fraud</button>
+                                </div>
+                                <div style="display: flex; gap: 10px; align-items: center; margin-top: 4px;">
+                                    <button class="btn btn-success" id="btn-wf-verify" onclick="triggerTaskVerify()">🔍 Verify Computation Proof</button>
+                                    <button class="btn" id="btn-wf-settle" onclick="triggerTaskSettle()">💰 Release Escrow Settlement</button>
+                                </div>
+                                <div id="mp-wf-log" class="mono" style="background: var(--bg-base); padding: 10px; border-radius: 4px; font-size: 11px; margin-top: 6px; min-height: 80px; max-height: 140px; overflow-y: auto; border: 1px solid var(--border-color);">
+                                    Ready to coordinate task.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 12. SUBMIT COMPUTING TASK -->
+            <div id="view-marketplace-submit" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Submit Decentralized Computing Task</div>
+                        <div class="page-desc">Define workload requirements, allocate escrow budget, and broadcast to provider network</div>
+                    </div>
+                </div>
+
+                <div class="card" style="max-width: 800px;">
+                    <div class="card-header">
+                        <div class="card-title">Task Specification</div>
+                    </div>
+                    <form onsubmit="handleTaskSubmit(event)" style="display: flex; flex-direction: column; gap: 14px; margin-top: 12px;">
+                        <div>
+                            <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">Task Title</label>
+                            <input type="text" id="task-input-title" required class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;" value="DeepSeek-R1-Finance-Sentiment-Inference">
+                        </div>
+                        <div class="grid-2">
+                            <div>
+                                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">Customer Entity</label>
+                                <input type="text" id="task-input-customer" required class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;" value="AlphaHedge-Research-Labs">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">Workload Type</label>
+                                <select id="task-input-workload" class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                                    <option value="4">AI Inference (MLP Forward Pass)</option>
+                                    <option value="3">Computer Vision (Sobel Edge Detection)</option>
+                                    <option value="2">Data Analytics & Aggregations</option>
+                                    <option value="1">High-Performance Matrix Algebra</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid-3">
+                            <div>
+                                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">Required CPU Cores</label>
+                                <input type="number" id="task-input-cpu" min="1" max="128" value="16" class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">Required GPUs</label>
+                                <input type="number" id="task-input-gpu" min="0" max="8" value="1" class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">Required RAM (MB)</label>
+                                <input type="number" id="task-input-ram" min="1024" max="524288" value="32768" class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                            </div>
+                        </div>
+                        <div class="grid-2">
+                            <div>
+                                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">Max Budget (SOV)</label>
+                                <input type="number" id="task-input-budget" min="10" max="100000" value="280" class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">Deadline (Seconds)</label>
+                                <input type="number" id="task-input-deadline" min="60" max="86400" value="3600" class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button type="submit" class="btn btn-primary" style="padding: 10px 24px;">Publish Task to Marketplace</button>
+                            <button type="button" class="btn" onclick="switchView('marketplace-browse')">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 13. PROVIDER NETWORK -->
+            <div id="view-marketplace-providers" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Computing Provider Network</div>
+                        <div class="page-desc">Independent computing infrastructure nodes contributing GPU/CPU hardware capacity</div>
+                    </div>
+                    <button class="btn btn-primary" onclick="switchView('marketplace-register')">+ Enroll Provider Node</button>
+                </div>
+
+                <div id="mp-provider-cards-grid" class="grid-3">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- 14. BECOME A PROVIDER -->
+            <div id="view-marketplace-register" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Enroll Compute Infrastructure</div>
+                        <div class="page-desc">Monetize idle GPUs, CPUs, and memory by executing verified SovereignChain workloads</div>
+                    </div>
+                </div>
+
+                <div class="card" style="max-width: 800px;">
+                    <div class="card-header">
+                        <div class="card-title">Provider Hardware & Pricing Specifications</div>
+                    </div>
+                    <form onsubmit="handleProviderRegister(event)" style="display: flex; flex-direction: column; gap: 14px; margin-top: 12px;">
+                        <div>
+                            <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">Node / Cluster Name</label>
+                            <input type="text" id="prov-input-name" required class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;" value="Lambda-H100-DGX-Cluster-04">
+                        </div>
+                        <div class="grid-2">
+                            <div>
+                                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">CPU Cores</label>
+                                <input type="number" id="prov-input-cpu" min="4" max="256" value="64" class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">GPU Architecture</label>
+                                <input type="text" id="prov-input-gpu" class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;" value="NVIDIA H100 80GB SXM5">
+                            </div>
+                        </div>
+                        <div class="grid-3">
+                            <div>
+                                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">GPU Count</label>
+                                <input type="number" id="prov-input-gcount" min="0" max="32" value="2" class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">RAM (MB)</label>
+                                <input type="number" id="prov-input-ram" min="4096" max="1048576" value="131072" class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">NVMe Storage (GB)</label>
+                                <input type="number" id="prov-input-storage" min="100" max="50000" value="2048" class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                            </div>
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">Base Price Per Workload (SOV)</label>
+                            <input type="number" id="prov-input-price" min="10" max="10000" value="240" class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button type="submit" class="btn btn-primary" style="padding: 10px 24px;">Enroll and Connect Node</button>
+                            <button type="button" class="btn" onclick="switchView('marketplace-providers')">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 15. REPUTATION LEADERBOARD -->
+            <div id="view-marketplace-reputation" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Provider Reputation & SLA Tracking</div>
+                        <div class="page-desc">Cryptographically audited reliability scores, completion ratios, and fraud penalty records</div>
+                    </div>
+                    <button class="btn" onclick="fetchMarketplaceReputation()">Refresh SLA</button>
+                </div>
+
+                <div class="card">
+                    <div class="table-container">
+                        <table class="soc-table">
+                            <thead>
+                                <tr><th>Rank</th><th>Provider ID</th><th>Node Identity</th><th>Tier</th><th>Completed</th><th>Slashed (Fraud)</th><th>Reputation Score</th><th>Total Earnings (SOV)</th></tr>
+                            </thead>
+                            <tbody id="tbody-mp-reputation">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. SECURITY AGENTS VIEW -->
+            <div id="view-agent" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">AI Security Agent Telemetry Engine</div>
+                        <div class="page-desc">Continuous sliding window anomaly detection and proposal generation</div>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="soc-card">
+                        <div class="soc-card-header">
+                            <div class="soc-card-title">Agent Cryptographic Identity</div>
+                            <span class="badge badge-ok">ONLINE</span>
+                        </div>
+                        <div class="soc-card-body">
+                            <div style="margin-bottom: 12px;">
+                                <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Public Key (Ed25519)</div>
+                                <div class="mono" style="font-size: 11px; color: var(--accent-cyan); word-break: break-all; margin-top: 4px;" id="agent-pubkey-display">
+                                    c8f38290ae51390dfa338902d130e47b99c7564d266ea8d10b80ef96c21e5491
+                                </div>
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Detection Rules Active</div>
+                            <ul style="margin: 8px 0 0 16px; color: var(--text-primary); font-size: 12px;">
+                                <li>Connection Flood (>20 handshakes / 1s window)</li>
+                                <li>Oversized Frame Detection (>64KB limit)</li>
+                                <li>Malformed Wire Transaction Signatures</li>
+                                <li>Validator Double-Voting & Equivocation</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="soc-card">
+                        <div class="soc-card-header">
+                            <div class="soc-card-title">Sliding Window Metrics</div>
+                            <span class="badge badge-info">1,000ms SAMPLING</span>
+                        </div>
+                        <div class="soc-card-body">
+                            <table class="soc-table">
+                                <thead><tr><th>Metric</th><th>Current Value</th><th>Threshold</th><th>Status</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Peer Inbound Rate</td><td class="mono">4 msgs/sec</td><td class="mono">50 msgs/sec</td><td><span class="badge badge-ok">NOMINAL</span></td></tr>
+                                    <tr><td>Signature Failures</td><td class="mono">0 / min</td><td class="mono">3 / min</td><td><span class="badge badge-ok">NOMINAL</span></td></tr>
+                                    <tr><td>Equivocation Flags</td><td class="mono">0</td><td class="mono">0</td><td><span class="badge badge-ok">CLEAN</span></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. UNANIMOUS TRUST DEMONSTRATION -->
+            <div id="view-trust" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Feature 2: Unanimous Trust Demonstration</div>
+                        <div class="page-desc">Interactive execution of distributed TCB voting: No single peer can independently authorize an action</div>
+                    </div>
+                </div>
+
+                <div class="demo-bar">
+                    <div>
+                        <div style="font-weight: 700; color: #fff;">Interactive Demonstration Scenarios</div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">Triggers live cryptographic verification against the real C server</div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-danger" onclick="runTrustDemo('disagreement')">
+                            1. Disagreement Scenario (Single Peer Veto)
+                        </button>
+                        <button class="btn btn-success" onclick="runTrustDemo('unanimous')">
+                            2. Unanimous Approval (3/3 Consensus)
+                        </button>
+                        <button class="btn" style="border-color: #d29922; color: #e3b341;" onclick="runTrustDemo('human')">
+                            3. Mandatory Human Intervention
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Result Banner -->
+                <div id="trust-banner" class="result-banner">
+                    <span id="trust-banner-text">SELECT A SCENARIO ABOVE</span>
+                    <span class="badge" id="trust-banner-badge">--</span>
+                </div>
+
+                <!-- Voting Cards Matrix -->
+                <div class="grid-3" id="trust-voting-grid">
+                    <div class="soc-card">
+                        <div class="soc-card-header"><div class="soc-card-title">TCB Peer 0</div><span class="badge" id="vote-peer-0">IDLE</span></div>
+                        <div class="soc-card-body" id="desc-peer-0" style="font-size: 12px; color: var(--text-secondary);">Awaiting scenario...</div>
+                    </div>
+                    <div class="soc-card">
+                        <div class="soc-card-header"><div class="soc-card-title">TCB Peer 1</div><span class="badge" id="vote-peer-1">IDLE</span></div>
+                        <div class="soc-card-body" id="desc-peer-1" style="font-size: 12px; color: var(--text-secondary);">Awaiting scenario...</div>
+                    </div>
+                    <div class="soc-card">
+                        <div class="soc-card-header"><div class="soc-card-title">TCB Peer 2</div><span class="badge" id="vote-peer-2">IDLE</span></div>
+                        <div class="soc-card-body" id="desc-peer-2" style="font-size: 12px; color: var(--text-secondary);">Awaiting scenario...</div>
+                    </div>
+                </div>
+
+                <!-- Execution Timeline -->
+                <div class="soc-card">
+                    <div class="soc-card-header">
+                        <div class="soc-card-title">Cryptographic Execution Timeline</div>
+                    </div>
+                    <div class="soc-card-body">
+                        <ul class="timeline-list" id="trust-timeline">
+                            <li class="timeline-item">
+                                <div class="timeline-label">Ready for Demonstration</div>
+                                <div class="timeline-desc">Click any of the three scenario buttons above to execute real cryptographic verification.</div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Governance Sign-off Box (for human scenario) -->
+                <div class="soc-card" id="governance-box" style="display: none; border-color: #d29922;">
+                    <div class="soc-card-header" style="background: rgba(210, 153, 34, 0.1);">
+                        <div class="soc-card-title" style="color: #e3b341;">
+                            Mandatory Operator Governance Action Required
+                        </div>
+                        <span class="badge badge-warn">PENDING OPERATOR SIGNATURE</span>
+                    </div>
+                    <div class="soc-card-body">
+                        <p style="color: var(--text-primary); font-size: 12px; margin-bottom: 12px;">
+                            The AI Security Agent detected validator equivocation and all 3 TCB peers verified the cryptographic proof.
+                            However, under SovereignChain constitutional policy, <strong>validator identity revocation CANNOT be automated</strong>.
+                            Human authorization is required to proceed.
+                        </p>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-success" onclick="resolveGovernance(true)">
+                                Sign & Authorize Revocation (Ed25519)
+                            </button>
+                            <button class="btn btn-danger" onclick="resolveGovernance(false)">
+                                Operator Veto / Dismiss
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. ATTACK REPLAY SIMULATOR -->
+            <div id="view-attack" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Feature 3: Controlled Attack Replay Simulator</div>
+                        <div class="page-desc">Simulate realistic hostile vector injections and observe autonomous fail-closed defense</div>
+                    </div>
+                </div>
+
+                <div class="demo-bar">
+                    <div>
+                        <div style="font-weight: 700; color: #fff;">Hostile Injections</div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">Executes attack validation against node wire parsers</div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-danger" onclick="runAttackDemo('replay_auth')">
+                            A. Replayed Authentication Handshake
+                        </button>
+                        <button class="btn btn-danger" onclick="runAttackDemo('invalid_tx')">
+                            B. Tampered Transaction Signature
+                        </button>
+                        <button class="btn btn-danger" onclick="runAttackDemo('equivocation')">
+                            C. Validator Equivocation (Double-Vote)
+                        </button>
+                    </div>
+                </div>
+
+                <div id="attack-banner" class="result-banner">
+                    <span id="attack-banner-text">SELECT AN ATTACK VECTOR ABOVE</span>
+                    <span class="badge badge-ok" id="attack-banner-badge">DEFENDED</span>
+                </div>
+
+                <div class="soc-card">
+                    <div class="soc-card-header">
+                        <div class="soc-card-title">Attack Response Timeline & Cryptographic Trace</div>
+                    </div>
+                    <div class="soc-card-body">
+                        <ul class="timeline-list" id="attack-timeline">
+                            <li class="timeline-item">
+                                <div class="timeline-label">Simulator Standby</div>
+                                <div class="timeline-desc">Select an attack scenario above to observe real-time cryptographic rejection.</div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. AUTONOMOUS SELF-HEALING -->
+            <div id="view-self-healing" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Feature 4: Autonomous Self-Healing Network</div>
+                        <div class="page-desc">Controlled fault injection, rapid anomaly detection, and bounded peer restoration</div>
+                    </div>
+                </div>
+
+                <div class="demo-bar">
+                    <div>
+                        <div style="font-weight: 700; color: #fff;">Fault Injection Controls</div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">Simulates Node 3 transport outage followed by autonomous recovery</div>
+                    </div>
+                    <button class="btn btn-danger" onclick="runSelfHealingDemo()">
+                        Trigger Outage on Node 3 & Run Autonomous Healing
+                    </button>
+                </div>
+
+                <div id="healing-banner" class="result-banner">
+                    <span id="healing-banner-text">AWAITING HEALING TRIGGER</span>
+                    <span class="badge badge-ok" id="healing-banner-badge">OPERATIONAL</span>
+                </div>
+
+                <div class="soc-card">
+                    <div class="soc-card-header">
+                        <div class="soc-card-title">Autonomous Recovery Phases</div>
+                    </div>
+                    <div class="soc-card-body">
+                        <ul class="timeline-list" id="healing-timeline">
+                            <li class="timeline-item">
+                                <div class="timeline-label">Self-Healing Engine Armed</div>
+                                <div class="timeline-desc">Click the trigger button to inject a simulated node failure and watch autonomous consensus reconciliation.</div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 8. PERMANENT SECURITY MEMORY -->
+            <div id="view-history" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Feature 5: Security History</div>
+                        <div class="page-desc">Append-only local event snapshot plus independently signed TCB peer DAGs. Peer histories can diverge and are checked separately.</div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" class="search-box" id="history-search" placeholder="Search by ID, Node, or Action..." oninput="filterHistory()">
+                    </div>
+                </div>
+
+                <div class="soc-card">
+                    <div class="soc-card-header">
+                        <div class="soc-card-title">Sentinel Security Events</div>
+                        <span class="badge badge-purple" id="history-badge-total">0 RECORDS</span>
+                    </div>
+                    <div class="soc-card-body" style="padding: 0;">
+                        <table class="soc-table">
+                            <thead>
+                                <tr><th>Timestamp</th><th>Node</th><th>Category</th><th>Action Taken</th><th>Detail</th><th>TCB Verdict</th><th>Event Hash</th></tr>
+                            </thead>
+                            <tbody id="tbody-history-full">
+                                <tr><td colspan="7" style="text-align:center; color: var(--text-muted);">Loading memory log...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="soc-card">
+                    <div class="soc-card-header">
+                        <div class="soc-card-title">Independent TCB DAG Integrity</div>
+                        <button class="btn" onclick="refreshDagAudit()">Verify peer histories</button>
+                    </div>
+                    <div class="soc-card-body" id="dag-audit-summary" style="color:var(--text-secondary);">Load the latest signed DAG records from each peer.</div>
+                </div>
+            </div>
+
+            <!-- 9. INCIDENT CENTRE -->
+            <div id="view-incidents" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Incident Centre & Forensics</div>
+                        <div class="page-desc">High-priority security investigations, evidence artifacts, and resolution outcomes</div>
+                    </div>
+                </div>
+
+                <div class="soc-card">
+                    <div class="soc-card-header">
+                        <div class="soc-card-title">Active & Historical Incidents</div>
+                    </div>
+                    <div class="soc-card-body" style="padding: 0;">
+                        <table class="soc-table">
+                            <thead>
+                                <tr><th>Incident ID</th><th>Time</th><th>Affected Node</th><th>Severity</th><th>Classification</th><th>Evidence</th><th>TCB Status</th><th>Outcome</th></tr>
+                            </thead>
+                            <tbody id="tbody-incidents-table">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 10. MARKETPLACE OVERVIEW -->
+            <div id="view-marketplace-overview" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Decentralized Computing Marketplace</div>
+                        <div class="page-desc">Peer-to-peer compute capacity coordination, off-chain workloads, and escrow settlement</div>
+                    </div>
+                    <button class="btn btn-primary" onclick="switchView('marketplace-submit')">
+                        + Submit Computing Task
+                    </button>
+                </div>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card green">
+                        <div class="kpi-label">Marketplace Status</div>
+                        <div class="kpi-val" id="mp-kpi-status">OPERATIONAL</div>
+                        <div class="kpi-sub">Trustless settlement active</div>
+                    </div>
+                    <div class="kpi-card blue">
+                        <div class="kpi-label">Compute Providers</div>
+                        <div class="kpi-val" id="mp-kpi-providers">3 Active</div>
+                        <div class="kpi-sub" id="mp-kpi-specs">112 Cores · 3 GPUs · 224 GB RAM</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Active Workloads</div>
+                        <div class="kpi-val" id="mp-kpi-tasks">--</div>
+                        <div class="kpi-sub" id="mp-kpi-completed">-- Completed & Settled</div>
+                    </div>
+                    <div class="kpi-card purple">
+                        <div class="kpi-label">Escrow Volume</div>
+                        <div class="kpi-val" id="mp-kpi-escrow">-- SOV</div>
+                        <div class="kpi-sub" id="mp-kpi-settled-vol">-- SOV settled to date</div>
+                    </div>
+                </div>
+
+                <div class="grid-2" style="margin-top: 16px;">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Supported Computing Workloads</div>
+                            <span class="tag tag-blue">Deterministic Proofs</span>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+                            <div style="background: var(--bg-surface-elevated); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color);">
+                                <div style="display: flex; justify-content: space-between; font-weight: 600;">
+                                    <span>🧠 AI Inference (MLP Forward Pass)</span>
+                                    <span class="tag tag-green">Cross-Validated</span>
+                                </div>
+                                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
+                                    Deep learning forward inference with ReLU activations, Softmax distribution, and cosine similarity.
+                                </div>
+                            </div>
+                            <div style="background: var(--bg-surface-elevated); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color);">
+                                <div style="display: flex; justify-content: space-between; font-weight: 600;">
+                                    <span>🖼️ Computer Vision (Sobel Edge Detection)</span>
+                                    <span class="tag tag-blue">Kernel Proof</span>
+                                </div>
+                                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
+                                    High-performance 3x3 convolution filtering, gradient energy mapping, and cryptographic digest verification.
+                                </div>
+                            </div>
+                            <div style="background: var(--bg-surface-elevated); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color);">
+                                <div style="display: flex; justify-content: space-between; font-weight: 600;">
+                                    <span>📊 Financial & Transactional Data Analytics</span>
+                                    <span class="tag tag-yellow">Statistical Sampling</span>
+                                </div>
+                                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
+                                    Distributed aggregations, variance bounds, standard deviation, and anomaly isolation.
+                                </div>
+                            </div>
+                            <div style="background: var(--bg-surface-elevated); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color);">
+                                <div style="display: flex; justify-content: space-between; font-weight: 600;">
+                                    <span>⚡ High-Performance Matrix Algebra</span>
+                                    <span class="tag tag-green">Ground-Truth Reference</span>
+                                </div>
+                                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
+                                    Matrix dot-product multiplication benchmark, trace invariant check, and dual execution.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Live Marketplace Activity</div>
+                            <button class="btn btn-sm" onclick="fetchMarketplaceData()">Refresh</button>
+                        </div>
+                        <div id="mp-overview-activity" style="display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto;">
+                            <!-- Activity stream populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 11. BROWSE COMPUTING TASKS -->
+            <div id="view-marketplace-browse" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Computing Tasks & Execution Lifecycle</div>
+                        <div class="page-desc">Track tasks across discovery, matching, isolated execution, proof verification, and settlement</div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-primary" onclick="switchView('marketplace-submit')">+ New Task</button>
+                        <button class="btn" onclick="fetchMarketplaceTasks()">Refresh</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="table-container">
+                        <table class="soc-table">
+                            <thead>
+                                <tr><th>Task ID</th><th>Title</th><th>Workload</th><th>Req CPU/RAM</th><th>Budget (SOV)</th><th>Provider</th><th>Status</th><th>Actions</th></tr>
+                            </thead>
+                            <tbody id="tbody-mp-tasks">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Interactive Task Workflow Panel -->
+                <div id="mp-task-workflow-panel" class="card" style="margin-top: 16px; display: none;">
+                    <div class="card-header">
+                        <div class="card-title" id="mp-workflow-title">Task Workflow: [ID]</div>
+                        <button class="btn btn-sm" onclick="document.getElementById('mp-task-workflow-panel').style.display='none'">Close</button>
+                    </div>
+                    <div class="grid-2" style="margin-top: 12px;">
+                        <div>
+                            <div style="font-weight: 600; margin-bottom: 8px;">Step 1: Provider Match & Allocation</div>
+                            <div id="mp-match-results" style="display: flex; flex-direction: column; gap: 8px;">
+                                <!-- Matches dynamically rendered -->
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-weight: 600; margin-bottom: 8px;">Step 2: Execution, Verification & Settlement</div>
+                            <div style="background: var(--bg-surface-elevated); padding: 14px; border-radius: 6px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 10px;">
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <button class="btn btn-primary" id="btn-wf-execute" onclick="triggerTaskExecute(false)">⚡ Execute Off-Chain</button>
+                                    <button class="btn btn-danger" id="btn-wf-fraud" onclick="triggerTaskExecute(true)">⚠️ Simulate Provider Fraud</button>
+                                </div>
+                                <div style="display: flex; gap: 10px; align-items: center; margin-top: 4px;">
+                                    <button class="btn btn-success" id="btn-wf-verify" onclick="triggerTaskVerify()">🔍 Verify Computation Proof</button>
+                                    <button class="btn" id="btn-wf-settle" onclick="triggerTaskSettle()">💰 Release Escrow Settlement</button>
+                                </div>
+                                <div id="mp-wf-log" class="mono" style="background: var(--bg-base); padding: 10px; border-radius: 4px; font-size: 11px; margin-top: 6px; min-height: 80px; max-height: 140px; overflow-y: auto; border: 1px solid var(--border-color);">
+                                    Ready to coordinate task.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 12. SUBMIT COMPUTING TASK -->
+            <div id="view-marketplace-submit" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Submit Decentralized Computing Task</div>
+                        <div class="page-desc">Define workload requirements, allocate escrow budget, and broadcast to provider network</div>
+                    </div>
+                </div>
+
+                <div class="card" style="max-width: 800px;">
+                    <div class="card-header">
+                        <div class="card-title">Task Specification</div>
+                    </div>
+                    <form onsubmit="handleTaskSubmit(event)" style="display: flex; flex-direction: column; gap: 14px; margin-top: 12px;">
+                        <div>
+                            <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">Task Title</label>
+                            <input type="text" id="task-input-title" required class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;" value="DeepSeek-R1-Finance-Sentiment-Inference">
+                        </div>
+                        <div class="grid-2">
+                            <div>
+                                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">Customer Entity</label>
+                                <input type="text" id="task-input-customer" required class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;" value="AlphaHedge-Research-Labs">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">Workload Type</label>
+                                <select id="task-input-workload" class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                                    <option value="4">AI Inference (MLP Forward Pass)</option>
+                                    <option value="3">Computer Vision (Sobel Edge Detection)</option>
+                                    <option value="2">Data Analytics & Aggregations</option>
+                                    <option value="1">High-Performance Matrix Algebra</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid-3">
+                            <div>
+                                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">Required CPU Cores</label>
+                                <input type="number" id="task-input-cpu" min="1" max="128" value="16" class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">Required GPUs</label>
+                                <input type="number" id="task-input-gpu" min="0" max="8" value="1" class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">Required RAM (MB)</label>
+                                <input type="number" id="task-input-ram" min="1024" max="524288" value="32768" class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                            </div>
+                        </div>
+                        <div class="grid-2">
+                            <div>
+                                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">Max Budget (SOV)</label>
+                                <input type="number" id="task-input-budget" min="10" max="100000" value="280" class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">Deadline (Seconds)</label>
+                                <input type="number" id="task-input-deadline" min="60" max="86400" value="3600" class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button type="submit" class="btn btn-primary" style="padding: 10px 24px;">Publish Task to Marketplace</button>
+                            <button type="button" class="btn" onclick="switchView('marketplace-browse')">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 13. PROVIDER NETWORK -->
+            <div id="view-marketplace-providers" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Computing Provider Network</div>
+                        <div class="page-desc">Independent computing infrastructure nodes contributing GPU/CPU hardware capacity</div>
+                    </div>
+                    <button class="btn btn-primary" onclick="switchView('marketplace-register')">+ Enroll Provider Node</button>
+                </div>
+
+                <div id="mp-provider-cards-grid" class="grid-3">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- 14. BECOME A PROVIDER -->
+            <div id="view-marketplace-register" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Enroll Compute Infrastructure</div>
+                        <div class="page-desc">Monetize idle GPUs, CPUs, and memory by executing verified SovereignChain workloads</div>
+                    </div>
+                </div>
+
+                <div class="card" style="max-width: 800px;">
+                    <div class="card-header">
+                        <div class="card-title">Provider Hardware & Pricing Specifications</div>
+                    </div>
+                    <form onsubmit="handleProviderRegister(event)" style="display: flex; flex-direction: column; gap: 14px; margin-top: 12px;">
+                        <div>
+                            <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">Node / Cluster Name</label>
+                            <input type="text" id="prov-input-name" required class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;" value="Lambda-H100-DGX-Cluster-04">
+                        </div>
+                        <div class="grid-2">
+                            <div>
+                                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">CPU Cores</label>
+                                <input type="number" id="prov-input-cpu" min="4" max="256" value="64" class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">GPU Architecture</label>
+                                <input type="text" id="prov-input-gpu" class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;" value="NVIDIA H100 80GB SXM5">
+                            </div>
+                        </div>
+                        <div class="grid-3">
+                            <div>
+                                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">GPU Count</label>
+                                <input type="number" id="prov-input-gcount" min="0" max="32" value="2" class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">RAM (MB)</label>
+                                <input type="number" id="prov-input-ram" min="4096" max="1048576" value="131072" class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">NVMe Storage (GB)</label>
+                                <input type="number" id="prov-input-storage" min="100" max="50000" value="2048" class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                            </div>
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);">Base Price Per Workload (SOV)</label>
+                            <input type="number" id="prov-input-price" min="10" max="10000" value="240" class="soc-input" style="width: 100%; padding: 8px 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button type="submit" class="btn btn-primary" style="padding: 10px 24px;">Enroll and Connect Node</button>
+                            <button type="button" class="btn" onclick="switchView('marketplace-providers')">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 15. REPUTATION LEADERBOARD -->
+            <div id="view-marketplace-reputation" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Provider Reputation & SLA Tracking</div>
+                        <div class="page-desc">Cryptographically audited reliability scores, completion ratios, and fraud penalty records</div>
+                    </div>
+                    <button class="btn" onclick="fetchMarketplaceReputation()">Refresh SLA</button>
+                </div>
+
+                <div class="card">
+                    <div class="table-container">
+                        <table class="soc-table">
+                            <thead>
+                                <tr><th>Rank</th><th>Provider ID</th><th>Node Identity</th><th>Tier</th><th>Completed</th><th>Slashed (Fraud)</th><th>Reputation Score</th><th>Total Earnings (SOV)</th></tr>
+                            </thead>
+                            <tbody id="tbody-mp-reputation">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 16. POST-QUANTUM CRYPTOGRAPHY OPERATIONS CENTER -->
+            <div id="view-pqc-dashboard" class="view-panel">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Post-Quantum Cryptographic Security Center</div>
+                        <div class="page-desc">NIST FIPS 204 (ML-DSA-65) & NIST FIPS 203 (ML-KEM-768) Hybrid Consensus & Infrastructure</div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" onclick="runPqcDemo()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                            Execute 9-Point PQC Demo
+                        </button>
+                        <button class="btn" onclick="fetchPqcBenchmark()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 2c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm6 14H6v-1.4c0-2 4-3.1 6-3.1s6 1.1 6 3.1V19z"/></svg>
+                            Benchmark Performance
+                        </button>
+                        <button class="btn" onclick="fetchPqcStatus()">Refresh Metrics</button>
+                    </div>
+                </div>
+
+                <!-- PQC Overview KPIs -->
+                <div class="kpi-grid">
+                    <div class="kpi-card green">
+                        <div class="kpi-label">Active Cryptographic Mode</div>
+                        <div class="kpi-val" id="pqc-kpi-mode" style="font-size: 18px; color: var(--accent-cyan);">HYBRID (ENFORCED)</div>
+                        <div class="kpi-sub">Ed25519 + ML-DSA-65 dual signatures</div>
+                    </div>
+                    <div class="kpi-card blue">
+                        <div class="kpi-label">PQC Digital Signatures</div>
+                        <div class="kpi-val" style="font-size: 18px;">ML-DSA-65</div>
+                        <div class="kpi-sub">NIST FIPS 204 (Level 3 / 1952B PK)</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Secure Key Establishment</div>
+                        <div class="kpi-val" style="font-size: 18px; color: #a371f7;">ML-KEM-768</div>
+                        <div class="kpi-sub">NIST FIPS 203 (Hybrid + X25519)</div>
+                    </div>
+                    <div class="kpi-card warn">
+                        <div class="kpi-label">Anti-Downgrade Policy</div>
+                        <div class="kpi-val" style="font-size: 18px; color: var(--status-ok);">STRICT_ACTIVE</div>
+                        <div class="kpi-sub">Classical rollback strictly blocked</div>
+                    </div>
+                </div>
+
+                <!-- 9-Point Demonstration Console -->
+                <div class="card">
+                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div class="card-title">Interactive Post-Quantum Security Demonstration (Part 10 Requirements)</div>
+                            <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">
+                                Executes genuine cryptographic operations live in backend: Keygen, ML-DSA Sign/Verify, ML-KEM Handshake, AES-256-GCM Session, TCB Consensus & Marketplace.
+                            </div>
+                        </div>
+                        <span class="tag tag-blue" id="pqc-demo-badge">STANDBY</span>
+                    </div>
+                    <div style="padding: 16px;">
+                        <div id="pqc-demo-steps" style="display: flex; flex-direction: column; gap: 12px;">
+                            <div style="color: var(--text-muted); font-size: 12px; font-style: italic;">
+                                Click "Execute 9-Point PQC Demo" above to run the live demonstration suite across all 9 architectural requirements.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cryptographic Performance Benchmark Comparison -->
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Digital Signature Benchmark: Ed25519 vs. ML-DSA-65</div>
+                        </div>
+                        <div class="table-container">
+                            <table class="soc-table">
+                                <thead>
+                                    <tr><th>Metric</th><th>Ed25519 (Classical)</th><th>ML-DSA-65 (Post-Quantum)</th><th>Impact / Ratio</th></tr>
+                                </thead>
+                                <tbody id="tbody-bench-sig">
+                                    <tr><td>Public Key Size</td><td class="mono">32 bytes</td><td class="mono" style="color: var(--accent-cyan);">1,952 bytes</td><td class="mono">61.0x</td></tr>
+                                    <tr><td>Signature Size</td><td class="mono">64 bytes</td><td class="mono" style="color: var(--accent-cyan);">3,309 bytes</td><td class="mono">51.7x</td></tr>
+                                    <tr><td>Key Generation Time</td><td class="mono" id="bench-ed-keygen">-- µs</td><td class="mono" id="bench-mldsa-keygen">-- µs</td><td class="mono" id="bench-ratio-keygen">--</td></tr>
+                                    <tr><td>Signing Latency</td><td class="mono" id="bench-ed-sign">-- µs</td><td class="mono" id="bench-mldsa-sign">-- µs</td><td class="mono" id="bench-ratio-sign">--</td></tr>
+                                    <tr><td>Verification Latency</td><td class="mono" id="bench-ed-verify">-- µs</td><td class="mono" id="bench-mldsa-verify">-- µs</td><td class="mono" id="bench-ratio-verify">--</td></tr>
+                                    <tr><td>Quantum Resistance</td><td><span class="tag tag-red">Vulnerable (Shor)</span></td><td><span class="tag tag-green">NIST Category 3 (Secure)</span></td><td>Protected</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Key Encapsulation Benchmark: ML-KEM-768 & Hybrid</div>
+                        </div>
+                        <div class="table-container">
+                            <table class="soc-table">
+                                <thead>
+                                    <tr><th>Operation / Mechanism</th><th>Primitive</th><th>Parameters</th><th>Measured Latency</th></tr>
+                                </thead>
+                                <tbody id="tbody-bench-kem">
+                                    <tr><td>ML-KEM Key Generation</td><td class="mono">CRYSTALS-Kyber</td><td class="mono">1,184B PK / 2,400B SK</td><td class="mono" id="bench-kem-keygen">-- µs</td></tr>
+                                    <tr><td>Encapsulation (Sender)</td><td class="mono">ML-KEM-768</td><td class="mono">1,088B Ciphertext</td><td class="mono" id="bench-kem-encap">-- µs</td></tr>
+                                    <tr><td>Decapsulation (Receiver)</td><td class="mono">ML-KEM-768</td><td class="mono">32B Shared Secret</td><td class="mono" id="bench-kem-decap">-- µs</td></tr>
+                                    <tr><td>Hybrid Session Initiate</td><td class="mono">ML-KEM + X25519</td><td class="mono">Ephemeral DH + Encap</td><td class="mono" id="bench-hybrid-init">-- µs</td></tr>
+                                    <tr><td>Hybrid Session Respond</td><td class="mono">ML-KEM + X25519</td><td class="mono">Static DH + Decap</td><td class="mono" id="bench-hybrid-resp">-- µs</td></tr>
+                                    <tr><td>Authenticated Encryption</td><td class="mono">AES-256-GCM</td><td class="mono">256-bit Key / 96-bit IV</td><td class="mono">Hardware Accelerated</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Node PQC Migration & Identity Matrix -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Network Participant Post-Quantum Identity Registry</div>
+                    </div>
+                    <div class="table-container">
+                        <table class="soc-table">
+                            <thead>
+                                <tr><th>Participant</th><th>Role</th><th>Active Mode</th><th>Ed25519 Pubkey</th><th>ML-DSA-65 Identity</th><th>ML-KEM-768 Channel</th><th>Downgrade Defense</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="font-bold">Node #0</td><td>Genesis Validator</td><td><span class="tag tag-green">HYBRID</span></td><td class="mono" style="font-size: 11px;">1a4c8f0e2b9c...</td><td class="mono" style="font-size: 11px; color: var(--accent-cyan);">mldsa65:79b8a2e1...</td><td><span class="tag tag-blue">ACTIVE (GCM)</span></td><td><span class="tag tag-green">ENFORCED</span></td></tr>
+                                <tr><td class="font-bold">Node #1</td><td>Validator</td><td><span class="tag tag-green">HYBRID</span></td><td class="mono" style="font-size: 11px;">f3d9b1a07c4e...</td><td class="mono" style="font-size: 11px; color: var(--accent-cyan);">mldsa65:3c2f91a5...</td><td><span class="tag tag-blue">ACTIVE (GCM)</span></td><td><span class="tag tag-green">ENFORCED</span></td></tr>
+                                <tr><td class="font-bold">Node #2</td><td>Validator</td><td><span class="tag tag-green">HYBRID</span></td><td class="mono" style="font-size: 11px;">8b21c4e90a5f...</td><td class="mono" style="font-size: 11px; color: var(--accent-cyan);">mldsa65:84e1b9c2...</td><td><span class="tag tag-blue">ACTIVE (GCM)</span></td><td><span class="tag tag-green">ENFORCED</span></td></tr>
+                                <tr><td class="font-bold">Node #3</td><td>Validator</td><td><span class="tag tag-green">HYBRID</span></td><td class="mono" style="font-size: 11px;">c7e4a19b2f0d...</td><td class="mono" style="font-size: 11px; color: var(--accent-cyan);">mldsa65:92a7f4c1...</td><td><span class="tag tag-blue">ACTIVE (GCM)</span></td><td><span class="tag tag-green">ENFORCED</span></td></tr>
+                                <tr><td class="font-bold">TCB Peer #0</td><td>TCB Guardian</td><td><span class="tag tag-green">HYBRID</span></td><td class="mono" style="font-size: 11px;">5d8e2a1b9f4c...</td><td class="mono" style="font-size: 11px; color: var(--accent-cyan);">mldsa65:a1b4c9e2...</td><td><span class="tag tag-blue">ACTIVE (GCM)</span></td><td><span class="tag tag-green">ENFORCED</span></td></tr>
+                                <tr><td class="font-bold">TCB Peer #1</td><td>TCB Guardian</td><td><span class="tag tag-green">HYBRID</span></td><td class="mono" style="font-size: 11px;">4b9f2c1a8e0d...</td><td class="mono" style="font-size: 11px; color: var(--accent-cyan);">mldsa65:c4e90a1b...</td><td><span class="tag tag-blue">ACTIVE (GCM)</span></td><td><span class="tag tag-green">ENFORCED</span></td></tr>
+                                <tr><td class="font-bold">TCB Peer #2</td><td>TCB Guardian</td><td><span class="tag tag-green">HYBRID</span></td><td class="mono" style="font-size: 11px;">9f0d1b4c8a2e...</td><td class="mono" style="font-size: 11px; color: var(--accent-cyan);">mldsa65:5f8e1a2b...</td><td><span class="tag tag-blue">ACTIVE (GCM)</span></td><td><span class="tag tag-green">ENFORCED</span></td></tr>
+                                <tr><td class="font-bold">Security Agent</td><td>AI Telemetry Monitor</td><td><span class="tag tag-green">HYBRID</span></td><td class="mono" style="font-size: 11px;">3e1a8f9c2b4d...</td><td class="mono" style="font-size: 11px; color: var(--accent-cyan);">mldsa65:6d9a2b1c...</td><td><span class="tag tag-blue">ACTIVE (GCM)</span></td><td><span class="tag tag-green">ENFORCED</span></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Scripting & API Integration -->
+    <script>
+        // API Base configuration
+        const API_BASE = window.location.origin.includes('http') ? window.location.origin : 'http://localhost:8088';
+
+        let appState = {
+            status: null,
+            network: null,
+            tcb: null,
+            history: [],
+            activeEscalationId: null
+        };
+
+        // Navigation
+        function switchView(tabId) {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.view-panel').forEach(el => el.classList.remove('active'));
+
+            const navs = document.querySelectorAll('.nav-item');
+            navs.forEach(n => {
+                if (n.getAttribute('onclick') && n.getAttribute('onclick').includes(tabId)) {
+                    n.classList.add('active');
+                }
+            });
+
+            const panel = document.getElementById(`view-${tabId}`);
+            if (panel) panel.classList.add('active');
+        }
+
+        // Live Clock
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').textContent = now.toISOString().substring(11, 19) + ' UTC';
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Safe Fetch Wrapper
+        async function apiGet(path) {
+            try {
+                const res = await fetch(`${API_BASE}${path}`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return await res.json();
+            } catch (err) {
+                console.warn(`API ${path} is unavailable`, err);
+                return null;
+            }
+        }
+
+        async function apiPost(path) {
+            try {
+                const res = await fetch(`${API_BASE}${path}`, { method: 'POST' });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return await res.json();
+            } catch (err) {
+                console.warn(`POST ${path} failed`, err);
+                return null;
+            }
+        }
+
+        // Fetch Live State
+        async function fetchLiveStatus() {
+            const status = await apiGet('/api/status');
+            const network = await apiGet('/api/network');
+            const tcb = await apiGet('/api/tcb');
+            const history = await apiGet('/api/history');
+
+            const liveDot = document.getElementById('live-dot');
+            const liveText = document.getElementById('live-status-text');
+
+            if (status) {
+                liveDot.classList.remove('error');
+                liveText.textContent = `NODE METRICS (${status.metrics_nodes}/${status.total_nodes} REPORTING)`;
+                appState.status = status;
+                document.getElementById('kpi-status').textContent = status.status;
+                document.getElementById('kpi-nodes').textContent = `${status.active_nodes} / ${status.total_nodes}`;
+                document.getElementById('kpi-round').textContent = status.consensus_round ?? 'N/A';
+                document.getElementById('kpi-txs').textContent = `Tx observations: ${status.total_txs ?? 'N/A'} · Message observations: ${status.total_msgs ?? 'N/A'}`;
+            } else {
+                liveDot.classList.add('error');
+                liveText.textContent = 'SENTINEL API UNAVAILABLE';
+            }
+
+            if (network) {
+                appState.network = network;
+                renderTopology(network.nodes);
+                renderNodesGrid(network.nodes);
+                document.getElementById('badge-node-count').textContent = network.nodes.length;
+            }
+
+            if (tcb) {
+                appState.tcb = tcb;
+                renderTcb(tcb);
+            }
+
+            if (history && history.records) {
+                appState.history = history.records;
+                renderHistory(history.records);
+                renderIncidents(history.records);
+                document.getElementById('badge-history-count').textContent = history.records.length;
+                document.getElementById('history-badge-total').textContent = `${history.records.length} RECORDS${history.dropped_records ? ` · ${history.dropped_records} DROPPED` : ''}`;
+            }
+        }
+
+        // Render Topology Radar
+        function renderTopology(nodes) {
+            const svg = document.getElementById('radar-svg');
+            if (!svg) return;
+
+            let html = `
+                <!-- Central TCB Core -->
+                <circle cx="400" cy="180" r="140" fill="none" stroke="#1f2738" stroke-dasharray="4 4"/>
+                <circle cx="400" cy="180" r="70" fill="none" stroke="#263147"/>
+                <polygon points="400,130 350,210 450,210" fill="rgba(200, 16, 46, 0.08)" stroke="#c8102e" stroke-width="1.5"/>
+                <text x="400" y="185" fill="#ffffff" font-size="10" font-weight="700" text-anchor="middle" font-family="monospace">TCB CORE</text>
+            `;
+
+            // Draw 3 TCB Peer Dots inside the triangle
+            const tcbCoords = [[400, 130], [350, 210], [450, 210]];
+            tcbCoords.forEach((pt, i) => {
+                html += `
+                    <circle cx="${pt[0]}" cy="${pt[1]}" r="6" fill="#c8102e" filter="drop-shadow(0 0 6px #ff2a4b)"/>
+                    <text x="${pt[0]}" y="${pt[1] - 10}" fill="#ff6b81" font-size="9" font-family="monospace" text-anchor="middle">TCB ${i}</text>
+                `;
+            });
+
+            // Draw Blockchain Nodes in an outer ring
+            const total = (nodes && nodes.length) || 6;
+            const cx = 400, cy = 180, radius = 135;
+
+            for (let i = 0; i < total; i++) {
+                const angle = (i * 2 * Math.PI / total) - (Math.PI / 2);
+                const x = cx + radius * Math.cos(angle);
+                const y = cy + radius * Math.sin(angle);
+
+                const node = (nodes && nodes[i]) || { id: i, state: 'UNKNOWN', role: 'VALIDATOR' };
+                let col = '#8b949e';
+                let stateClass = 'Unknown';
+                if (node.state === 'OPERATIONAL') { col = '#2ea043'; stateClass = 'Operational'; }
+                if (node.state === 'ONLINE') { col = '#2ea043'; stateClass = 'Online'; }
+                if (node.state === 'TCP_REACHABLE') { col = '#2ea043'; stateClass = 'TCP reachable'; }
+                if (node.state === 'INVESTIGATING') { col = '#d29922'; stateClass = 'Investigating'; }
+                if (node.state === 'SUSPICIOUS') { col = '#f85149'; stateClass = 'Suspicious'; }
+                if (node.state === 'QUARANTINED') { col = '#ff2a4b'; stateClass = 'Quarantined'; }
+                if (node.state === 'DISCONNECTED') { col = '#484f58'; stateClass = 'Offline'; }
+
+                // Connect line to center
+                html += `<line x1="${x}" y1="${y}" x2="${cx}" y2="${cy}" stroke="${col}" stroke-opacity="0.3" stroke-width="1.5"/>`;
+
+                // Node circle
+                html += `
+                    <circle cx="${x}" cy="${y}" r="14" fill="#0e121a" stroke="${col}" stroke-width="2"/>
+                    <text x="${x}" y="${y + 4}" fill="#ffffff" font-size="10" font-weight="700" text-anchor="middle" font-family="monospace">N${node.id}</text>
+                    <text x="${x}" y="${y + 24}" fill="${col}" font-size="9" text-anchor="middle" font-family="monospace">${stateClass}</text>
+                `;
+            }
+
+            svg.innerHTML = html;
+        }
+
+        // Render Nodes Grid
+        function renderNodesGrid(nodes) {
+            const grid = document.getElementById('nodes-grid');
+            if (!grid) return;
+
+            let html = '';
+            nodes.forEach(n => {
+                let badgeClass = 'badge';
+                if (n.state === 'OPERATIONAL' || n.state === 'ONLINE' || n.state === 'TCP_REACHABLE') badgeClass = 'badge-ok';
+                if (n.state === 'QUARANTINED') badgeClass = 'badge-error';
+                else if (n.state === 'SUSPICIOUS') badgeClass = 'badge-warn';
+                else if (n.state === 'DISCONNECTED') badgeClass = 'badge';
+
+                html += `
+                    <div class="soc-card">
+                        <div class="soc-card-header">
+                            <div class="soc-card-title">Node ${n.id} (${n.role})</div>
+                            <span class="badge ${badgeClass}">${n.state}</span>
+                        </div>
+                        <div class="soc-card-body">
+                            <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+                                <span style="color:var(--text-secondary);">Endpoint</span>
+                                <span class="mono">${n.host}:${n.port}</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+                                <span style="color:var(--text-secondary);">Metrics latency</span>
+                                <span class="mono" style="color:var(--text-secondary);">${!n.telemetry_observed ? 'Not checked' : n.ping_ms == null ? 'Unreachable' : `${n.ping_ms} ms`}</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+                                <span style="color:var(--text-secondary);">Authenticated peers</span>
+                                <span class="mono">${n.authenticated_peers ?? 'Not observed'}</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+                                <span style="color:var(--text-secondary);">Msg Count</span>
+                                <span class="mono">${n.msg_count ?? 'Not observed'}</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+                                <span style="color:var(--text-secondary);">Accepted Tx</span>
+                                <span class="mono">${n.tx_count ?? 'Not observed'}</span>
+                            </div>
+                            <div style="margin-top: 8px;">
+                                <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Public Key</div>
+                                <div class="mono" style="font-size:10px; color:var(--accent-cyan); word-break:break-all;">${n.pubkey}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            grid.innerHTML = html;
+        }
+
+        // Render TCB
+        function renderTcb(tcb) {
+            const grid = document.getElementById('tcb-peers-grid');
+            if (grid && tcb.peers) {
+                let html = '';
+                tcb.peers.forEach(p => {
+                    html += `
+                        <div class="soc-card">
+                            <div class="soc-card-header">
+                                <div class="soc-card-title">TCB Peer ${p.id}</div>
+                                <span class="badge badge-ok">DAG ONLINE</span>
+                            </div>
+                            <div class="soc-card-body">
+                                <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+                                    <span style="color:var(--text-secondary);">Independent DAG Size</span>
+                                    <span class="mono" style="font-weight:700;">${p.dag_size} Vertices</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+                                    <span style="color:var(--text-secondary);">Consensus Mode</span>
+                                    <span class="mono" style="color:var(--accent-red-bright);">STRICT_100%</span>
+                                </div>
+                                <div style="margin-top: 8px;">
+                                    <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Peer Identity Key</div>
+                                    <div class="mono" style="font-size:10px; color:var(--accent-cyan); word-break:break-all;">${p.pubkey}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                grid.innerHTML = html;
+            }
+
+            const decTbody = document.getElementById('tbody-tcb-decisions');
+            if (decTbody && tcb.recent_verifications) {
+                let html = '';
+                tcb.recent_verifications.forEach(v => {
+                    let b = 'badge-ok';
+                    if (v.status === 'REJECTED') b = 'badge-error';
+                    if (v.status === 'ESCALATED') b = 'badge-warn';
+                    if (v.status === 'OPERATOR_VETOED') b = 'badge-error';
+                    if (v.status === 'PENDING') b = 'badge-warn';
+                    html += `
+                        <tr>
+                            <td class="mono">Node ${v.target_node}</td>
+                            <td class="mono">${v.proposed_action}</td>
+                            <td><span class="badge ${b}">${v.status}</span></td>
+                            <td class="mono">${v.quorum}</td>
+                            <td class="mono">DAG ${v.round ?? 'N/A'}</td>
+                        </tr>
+                    `;
+                });
+                decTbody.innerHTML = html;
+            }
+        }
+
+        // Render History
+        function renderHistory(records) {
+            const fullTbody = document.getElementById('tbody-history-full');
+            const ovTbody = document.getElementById('tbody-overview-events');
+
+            let fullHtml = '';
+            let ovHtml = '';
+
+            records.forEach((r, idx) => {
+                let badgeClass = 'badge-ok';
+                if (r.status.includes('REJECTED')) badgeClass = 'badge-error';
+                else if (r.status.includes('ESCALATED')) badgeClass = 'badge-warn';
+
+                const d = new Date(r.timestamp * 1000).toISOString().substring(11, 19);
+
+                fullHtml += `
+                    <tr>
+                        <td class="mono">${d}</td>
+                        <td class="mono">Node ${r.node_id}</td>
+                        <td><span class="badge badge-info">${r.category}</span></td>
+                        <td class="mono">${r.action}</td>
+                        <td style="color:var(--text-secondary);">${r.detail}</td>
+                        <td><span class="badge ${badgeClass}">${r.status}</span></td>
+                        <td class="mono" style="color:var(--accent-cyan); font-size:10px;">${r.event_id.substring(0, 16)}...</td>
+                    </tr>
+                `;
+
+                if (idx < 5) {
+                    ovHtml += `
+                        <tr>
+                            <td class="mono">${d}</td>
+                            <td class="mono">Node ${r.node_id}</td>
+                            <td class="mono">${r.action}</td>
+                            <td><span class="badge ${badgeClass}">${r.status}</span></td>
+                        </tr>
+                    `;
+                }
+            });
+
+            if (fullTbody) fullTbody.innerHTML = fullHtml || '<tr><td colspan="7">No history records found.</td></tr>';
+            if (ovTbody) ovTbody.innerHTML = ovHtml || '<tr><td colspan="4">No recent events.</td></tr>';
+        }
+
+        // Filter History
+        function filterHistory() {
+            const query = (document.getElementById('history-search').value || '').toLowerCase();
+            const filtered = appState.history.filter(r => 
+                r.action.toLowerCase().includes(query) ||
+                r.category.toLowerCase().includes(query) ||
+                r.detail.toLowerCase().includes(query) ||
+                String(r.node_id).includes(query)
+            );
+            renderHistory(filtered);
+        }
+
+        async function refreshDagAudit() {
+            const box = document.getElementById('dag-audit-summary');
+            const result = await apiGet('/api/history/dags');
+            if (!result) { box.textContent = 'TCB DAG audit endpoint is unavailable.'; return; }
+            const failed = result.peers.some(peer => peer.integrity !== 'VERIFIED');
+            const peerRows = result.peers.map(peer => `
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-color);">
+                    <span>Peer ${peer.id} · ${peer.size} vertices</span>
+                    <span class="badge ${peer.integrity === 'VERIFIED' ? 'badge-ok' : 'badge-error'}">${peer.integrity}</span>
+                </div>`).join('');
+            box.innerHTML = `<div style="margin-bottom:10px;">${result.storage} · ${result.shared_events} events present in every peer DAG · ${result.unanchored_local_events} local events missing from one or more peer DAGs · ${result.unmatched_peer_events} peer events absent from local history · ${result.missing_event_copies} missing event copies · ${result.event_append_dropped} events not recorded in all DAGs · ${result.shared_vertices} identical signed vertices · ${result.peer_specific_vertices} peer-specific vertices ${result.persistence_error ? '· STORAGE ERROR' : ''}</div>${peerRows}`;
+            if (failed) box.insertAdjacentHTML('afterbegin', '<div class="badge badge-error" style="margin-bottom:10px;">TCB DAG INTEGRITY FAILURE</div>');
+        }
+
+        // Render Incidents
+        function renderIncidents(records) {
+            const tb = document.getElementById('tbody-incidents-table');
+            if (!tb) return;
+
+            const incidents = records.filter(r => r.category === 'ACTIVE_DEFENCE' || r.category === 'GOVERNANCE');
+            document.getElementById('badge-incidents').textContent = incidents.length;
+
+            let html = '';
+            incidents.forEach(inc => {
+                let sevBadge = 'badge-error';
+                let sevLabel = 'HIGH';
+                if (inc.action.includes('REPLAY')) { sevBadge = 'badge-warn'; sevLabel = 'MEDIUM'; }
+                if (inc.action.includes('EQUIVOCATION')) { sevBadge = 'badge-error'; sevLabel = 'CRITICAL'; }
+
+                html += `
+                    <tr>
+                        <td class="mono" style="color:var(--accent-cyan);">INC-${inc.event_id.substring(0, 8)}</td>
+                        <td class="mono">${new Date(inc.timestamp * 1000).toISOString().substring(11, 19)}</td>
+                        <td class="mono">Node ${inc.node_id}</td>
+                        <td><span class="badge ${sevBadge}">${sevLabel}</span></td>
+                        <td class="mono">${inc.action}</td>
+                        <td style="color:var(--text-secondary);">${inc.detail}</td>
+                        <td><span class="badge badge-ok">VERIFIED</span></td>
+                        <td><span class="badge badge-info">${inc.status}</span></td>
+                    </tr>
+                `;
+            });
+            tb.innerHTML = html || '<tr><td colspan="8" style="text-align:center;">No incidents recorded.</td></tr>';
+        }
+
+        // Feature 2: Unanimous Trust Demonstration
+        async function runTrustDemo(scenario) {
+            const banner = document.getElementById('trust-banner');
+            const bannerText = document.getElementById('trust-banner-text');
+            const bannerBadge = document.getElementById('trust-banner-badge');
+            const govBox = document.getElementById('governance-box');
+            govBox.style.display = 'none';
+
+            banner.className = 'result-banner';
+
+            const res = await apiPost(`/api/demo/trust?scenario=${scenario}`);
+            if (!res) {
+                alert('Could not reach Sentinel server. Make sure bin/sentinel_server is running on port 8088.');
+                return;
+            }
+
+            bannerText.textContent = res.result_banner;
+
+            if (scenario === 'disagreement') {
+                banner.classList.add('denied');
+                bannerBadge.className = 'badge badge-error';
+                bannerBadge.textContent = 'AUTHORISATION DENIED';
+
+                document.getElementById('vote-peer-0').className = 'badge badge-ok';
+                document.getElementById('vote-peer-0').textContent = 'APPROVE';
+                document.getElementById('desc-peer-0').textContent = 'Evidence matched DoS flood heuristic. DAG 0 approved.';
+
+                document.getElementById('vote-peer-1').className = 'badge badge-error';
+                document.getElementById('vote-peer-1').textContent = 'REJECT (DISSENT)';
+                document.getElementById('desc-peer-1').textContent = `Rejected by Peer 1: ${res.dissent_reason}`;
+
+                document.getElementById('vote-peer-2').className = 'badge badge-warn';
+                document.getElementById('vote-peer-2').textContent = 'PENDING';
+                document.getElementById('desc-peer-2').textContent = 'Halted fail-closed. Collective unanimity broken.';
+            } else if (scenario === 'unanimous') {
+                banner.classList.add('approved');
+                bannerBadge.className = 'badge badge-ok';
+                bannerBadge.textContent = 'UNANIMOUS AUTHORISATION ACHIEVED';
+
+                for (let i = 0; i < 3; i++) {
+                    document.getElementById(`vote-peer-${i}`).className = 'badge badge-ok';
+                    document.getElementById(`vote-peer-${i}`).textContent = 'APPROVE (100%)';
+                    document.getElementById(`desc-peer-${i}`).textContent = 'Evidence cryptographically verified and committed into independent DAG.';
+                }
+            } else if (scenario === 'human') {
+                banner.classList.add('escalated');
+                bannerBadge.className = 'badge badge-warn';
+                bannerBadge.textContent = 'ESCALATED TO OPERATOR';
+                govBox.style.display = 'block';
+                appState.activeEscalationId = res.request_id;
+
+                for (let i = 0; i < 3; i++) {
+                    document.getElementById(`vote-peer-${i}`).className = 'badge badge-ok';
+                    document.getElementById(`vote-peer-${i}`).textContent = 'VERIFIED';
+                    document.getElementById(`desc-peer-${i}`).textContent = 'Equivocation proof verified. Automatic execution blocked by constitutional rule.';
+                }
+            }
+
+            // Render Timeline
+            renderTimeline('trust-timeline', res.timeline);
+            fetchLiveStatus();
+        }
+
+        // Operator Governance Sign-off
+        async function resolveGovernance(approve) {
+            if (!appState.activeEscalationId) {
+                alert('There is no active operator approval request.');
+                return;
+            }
+            const res = await apiPost(`/api/governance/resolve?request_id=${encodeURIComponent(appState.activeEscalationId)}&approve=${approve}`);
+            if (!res || res.status !== 'SUCCESS') {
+                alert(res?.error || 'The operator decision could not be recorded.');
+                return;
+            }
+            const govBox = document.getElementById('governance-box');
+            govBox.style.display = 'none';
+            appState.activeEscalationId = null;
+
+            const banner = document.getElementById('trust-banner');
+            const bannerText = document.getElementById('trust-banner-text');
+            const bannerBadge = document.getElementById('trust-banner-badge');
+
+            banner.className = 'result-banner';
+            if (approve) {
+                banner.classList.add('approved');
+                bannerText.textContent = 'OPERATOR SIGNED REVOCATION ENFORCED VIA NODE GUARD';
+                bannerBadge.className = 'badge badge-ok';
+                bannerBadge.textContent = 'EXECUTED';
+            } else {
+                banner.classList.add('denied');
+                bannerText.textContent = 'OPERATOR VETOED PROPOSED ACTION';
+                bannerBadge.className = 'badge badge-error';
+                bannerBadge.textContent = 'VETOED';
+            }
+            fetchLiveStatus();
+        }
+
+        // Feature 3: Attack Simulator
+        async function runAttackDemo(scenario) {
+            const banner = document.getElementById('attack-banner');
+            const bannerText = document.getElementById('attack-banner-text');
+            const bannerBadge = document.getElementById('attack-banner-badge');
+
+            const res = await apiPost(`/api/demo/attack?scenario=${scenario}`);
+            if (!res) return;
+
+            banner.className = 'result-banner approved';
+            bannerText.textContent = `ATTACK MITIGATED: ${res.attack}`;
+            bannerBadge.textContent = res.outcome;
+
+            renderTimeline('attack-timeline', res.timeline);
+            fetchLiveStatus();
+        }
+
+        // Feature 4: Autonomous Self-Healing
+        async function runSelfHealingDemo() {
+            const banner = document.getElementById('healing-banner');
+            const bannerText = document.getElementById('healing-banner-text');
+            const bannerBadge = document.getElementById('healing-banner-badge');
+
+            const res = await apiPost('/api/demo/self_healing');
+            if (!res) return;
+
+            banner.className = `result-banner ${res.reachable ? 'approved' : 'escalated'}`;
+            bannerText.textContent = res.reachable
+                ? `NODE ${res.recovered_node} TCP LISTENER IS REACHABLE`
+                : `RECOVERY PENDING: NODE ${res.recovered_node} DID NOT RESPOND`;
+            bannerBadge.className = `badge ${res.reachable ? 'badge-ok' : 'badge-warn'}`;
+            bannerBadge.textContent = res.reachable ? 'REACHABLE' : 'PENDING';
+
+            renderTimeline('healing-timeline', res.timeline);
+            fetchLiveStatus();
+        }
+
+        // Timeline Builder
+        function renderTimeline(elementId, steps) {
+            const list = document.getElementById(elementId);
+            if (!list || !steps) return;
+
+            let html = '';
+            steps.forEach(st => {
+                html += `
+                    <li class="timeline-item">
+                        <div class="timeline-label">Step ${st.step}: ${st.label}</div>
+                        <div class="timeline-desc">${st.desc}</div>
+                    </li>
+                `;
+            });
+            list.innerHTML = html;
+        }
+
+        // ==========================================
+        // DECENTRALIZED COMPUTING MARKETPLACE JS
+        // ==========================================
+        let currentWorkflowTaskId = null;
+
+        async function fetchMarketplaceOverview() {
+            const ov = await apiGet('/api/marketplace/overview');
+            if (!ov) return;
+            document.getElementById('mp-kpi-status').textContent = ov.status || 'OPERATIONAL';
+            document.getElementById('mp-kpi-providers').textContent = `${ov.providers_count} Enrolled`;
+            document.getElementById('mp-kpi-specs').textContent = `${ov.total_cpu_cores} Cores · ${ov.total_gpus} GPUs · ${ov.total_ram_gb} GB RAM`;
+            document.getElementById('mp-kpi-tasks').textContent = `${ov.active_tasks} Active`;
+            document.getElementById('mp-kpi-completed').textContent = `${ov.completed_tasks} Completed & Settled`;
+            document.getElementById('mp-kpi-escrow').textContent = `${ov.total_escrow_sov} SOV`;
+            document.getElementById('mp-kpi-settled-vol').textContent = `${ov.settled_volume_sov} SOV total volume`;
+            document.getElementById('badge-mp-tasks').textContent = ov.active_tasks;
+            document.getElementById('badge-mp-providers').textContent = ov.providers_count;
+        }
+
+        async function fetchMarketplaceTasks() {
+            const data = await apiGet('/api/marketplace/tasks');
+            const tbody = document.getElementById('tbody-mp-tasks');
+            if (!data || !tbody) return;
+
+            let html = '';
+            if (data.tasks.length === 0) {
+                html = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No computing tasks submitted yet. Create one above!</td></tr>';
+            } else {
+                data.tasks.forEach(t => {
+                    const statusTag = t.status === 'SETTLED' ? 'tag-green' :
+                                      t.status === 'VERIFIED_SUCCESS' ? 'tag-blue' :
+                                      t.status === 'VERIFICATION_FAILED' ? 'tag-red' :
+                                      t.status === 'ESCROW_RESERVED' || t.status === 'COMPUTING' ? 'tag-purple' : 'tag-yellow';
+
+                    html += `
+                        <tr>
+                            <td class="mono font-bold">${t.task_id.substring(0, 10)}...</td>
+                            <td>${t.title}</td>
+                            <td><span class="tag tag-blue">${t.workload}</span></td>
+                            <td>${t.req_cpu}C / ${(t.req_ram_mb/1024).toFixed(1)}GB</td>
+                            <td class="mono font-bold">${t.budget} SOV</td>
+                            <td>${t.provider_id >= 0 ? `Provider #${t.provider_id}` : '<span style="color:var(--text-muted)">Unassigned</span>'}</td>
+                            <td><span class="tag ${statusTag}">${t.status}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="openTaskWorkflow('${t.task_id}')">Coordinate Task</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+            tbody.innerHTML = html;
+        }
+
+        async function fetchMarketplaceProviders() {
+            const data = await apiGet('/api/marketplace/providers');
+            const grid = document.getElementById('mp-provider-cards-grid');
+            if (!data || !grid) return;
+
+            let html = '';
+            data.providers.forEach(p => {
+                const repColor = p.reputation >= 99.0 ? 'var(--status-ok)' :
+                                 p.reputation >= 95.0 ? 'var(--accent-blue)' : 'var(--status-warn)';
+
+                html += `
+                    <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">${p.name}</div>
+                                <span class="tag ${p.available ? 'tag-green' : 'tag-red'}">${p.available ? 'AVAILABLE' : 'BUSY'}</span>
+                            </div>
+                            <div class="mono" style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Pubkey: ${p.pubkey.substring(0, 16)}...</div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; background: var(--bg-surface-elevated); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color);">
+                                <div><span style="color: var(--text-secondary); font-size: 11px;">CPU Cores:</span> <span class="font-bold">${p.cpu_cores}</span></div>
+                                <div><span style="color: var(--text-secondary); font-size: 11px;">GPU:</span> <span class="font-bold">${p.gpu_count > 0 ? `${p.gpu_count}x ${p.gpu_model}` : 'None'}</span></div>
+                                <div><span style="color: var(--text-secondary); font-size: 11px;">RAM:</span> <span class="font-bold">${(p.ram_mb/1024).toFixed(0)} GB</span></div>
+                                <div><span style="color: var(--text-secondary); font-size: 11px;">NVMe:</span> <span class="font-bold">${p.storage_gb} GB</span></div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-size: 10px; color: var(--text-secondary);">REPUTATION SCORE</div>
+                                <div class="font-bold" style="font-size: 16px; color: ${repColor};">${p.reputation.toFixed(1)}%</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 10px; color: var(--text-secondary);">RATE / TASK</div>
+                                <div class="font-bold mono" style="font-size: 14px; color: var(--text-primary);">${p.price_per_task} SOV</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            grid.innerHTML = html;
+        }
+
+        async function fetchMarketplaceReputation() {
+            const data = await apiGet('/api/marketplace/reputation');
+            const tbody = document.getElementById('tbody-mp-reputation');
+            if (!data || !tbody) return;
+
+            let html = '';
+            data.leaderboard.forEach(r => {
+                const tierClass = r.tier === 'INSTITUTIONAL_ELITE' ? 'tag-purple' :
+                                  r.tier === 'VERIFIED_PARTNER' ? 'tag-blue' : 'tag-green';
+
+                html += `
+                    <tr>
+                        <td class="font-bold mono">#${r.rank}</td>
+                        <td class="mono">Node #${r.id}</td>
+                        <td class="font-bold">${r.name}</td>
+                        <td><span class="tag ${tierClass}">${r.tier}</span></td>
+                        <td class="mono" style="color: var(--status-ok);">${r.completed} tasks</td>
+                        <td class="mono" style="color: ${r.failed > 0 ? 'var(--status-error)' : 'var(--text-muted)'};">${r.failed} flagged</td>
+                        <td><div class="font-bold" style="color: var(--status-ok); font-size: 13px;">${r.reputation.toFixed(1)}%</div></td>
+                        <td class="mono font-bold">${r.total_earned} SOV</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        async function fetchMarketplaceData() {
+            await fetchMarketplaceOverview();
+            await fetchMarketplaceTasks();
+            await fetchMarketplaceProviders();
+            await fetchMarketplaceReputation();
+        }
+
+        async function handleTaskSubmit(e) {
+            e.preventDefault();
+            const title = encodeURIComponent(document.getElementById('task-input-title').value);
+            const customer = encodeURIComponent(document.getElementById('task-input-customer').value);
+            const workload = document.getElementById('task-input-workload').value;
+            const cpu = document.getElementById('task-input-cpu').value;
+            const gpu = document.getElementById('task-input-gpu').value;
+            const ram = document.getElementById('task-input-ram').value;
+            const budget = document.getElementById('task-input-budget').value;
+            const deadline = document.getElementById('task-input-deadline').value;
+
+            const res = await apiPost(`/api/marketplace/tasks/create?title=${title}&customer=${customer}&workload=${workload}&cpu=${cpu}&gpu=${gpu}&ram=${ram}&budget=${budget}&deadline=${deadline}`);
+            if (res && res.status === 'SUCCESS') {
+                alert(`Task published to SovereignChain marketplace! Task ID: ${res.task_id}`);
+                switchView('marketplace-browse');
+                await fetchMarketplaceData();
+                openTaskWorkflow(res.task_id);
+            } else {
+                alert('Failed to publish task. Check parameters.');
+            }
+        }
+
+        async function handleProviderRegister(e) {
+            e.preventDefault();
+            const name = encodeURIComponent(document.getElementById('prov-input-name').value);
+            const cpu = document.getElementById('prov-input-cpu').value;
+            const gpu = encodeURIComponent(document.getElementById('prov-input-gpu').value);
+            const gcount = document.getElementById('prov-input-gcount').value;
+            const ram = document.getElementById('prov-input-ram').value;
+            const storage = document.getElementById('prov-input-storage').value;
+            const price = document.getElementById('prov-input-price').value;
+
+            const res = await apiPost(`/api/marketplace/providers/register?name=${name}&cpu=${cpu}&gpu=${gpu}&gcount=${gcount}&ram=${ram}&storage=${storage}&price=${price}`);
+            if (res && res.status === 'SUCCESS') {
+                alert(`Provider enrolled successfully! Node ID: ${res.provider_id}`);
+                switchView('marketplace-providers');
+                await fetchMarketplaceData();
+            } else {
+                alert('Failed to enroll provider.');
+            }
+        }
+
+        async function openTaskWorkflow(taskId) {
+            currentWorkflowTaskId = taskId;
+            const panel = document.getElementById('mp-task-workflow-panel');
+            panel.style.display = 'block';
+            document.getElementById('mp-workflow-title').textContent = `Task Coordination: ${taskId}`;
+            document.getElementById('mp-wf-log').innerHTML = `Inspecting matches for task ${taskId}...`;
+
+            const matchData = await apiGet(`/api/marketplace/tasks/match?task_id=${taskId}`);
+            const container = document.getElementById('mp-match-results');
+            if (!matchData || !container) return;
+
+            let html = '';
+            matchData.matches.forEach(m => {
+                html += `
+                    <div style="background: var(--bg-surface-elevated); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600;">${m.name} <span class="tag ${m.eligible ? 'tag-green' : 'tag-red'}">${m.score.toFixed(1)}% Match</span></div>
+                            <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${m.reason}</div>
+                        </div>
+                        <div>
+                            ${m.eligible ? `<button class="btn btn-sm btn-primary" onclick="assignProviderToTask('${taskId}', ${m.provider_id})">Lock Escrow (${m.price} SOV)</button>` : '<span style="color:var(--text-muted); font-size: 11px;">Ineligible</span>'}
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        async function assignProviderToTask(taskId, providerId) {
+            const log = document.getElementById('mp-wf-log');
+            log.innerHTML += `\n[ESCROW] Reserving budget with Provider #${providerId}...`;
+            const res = await apiPost(`/api/marketplace/tasks/assign?task_id=${taskId}&provider_id=${providerId}`);
+            if (res && res.status === 'SUCCESS') {
+                log.innerHTML += `\n[OK] Task assigned! On-chain escrow locked. Ready for off-chain execution.`;
+                await fetchMarketplaceData();
+            } else {
+                log.innerHTML += `\n[ERROR] Assignment failed.`;
+            }
+        }
+
+        async function triggerTaskExecute(simulateFraud) {
+            if (!currentWorkflowTaskId) return;
+            const log = document.getElementById('mp-wf-log');
+            log.innerHTML += `\n[EXECUTION] Dispatching workload to provider node (Fraud Simulation = ${simulateFraud})...`;
+            const res = await apiPost(`/api/marketplace/tasks/execute?task_id=${currentWorkflowTaskId}&fraud=${simulateFraud}`);
+            if (res && res.status === 'SUCCESS') {
+                log.innerHTML += `\n[OK] Computation finished! Output and SHA-256 proof hash submitted to SovereignChain.`;
+                await fetchMarketplaceData();
+            } else {
+                log.innerHTML += `\n[ERROR] Execution failed. Ensure provider is assigned first.`;
+            }
+        }
+
+        async function triggerTaskVerify() {
+            if (!currentWorkflowTaskId) return;
+            const log = document.getElementById('mp-wf-log');
+            log.innerHTML += `\n[VERIFICATION] Running independent deterministic reference check...`;
+            const res = await apiPost(`/api/marketplace/tasks/verify?task_id=${currentWorkflowTaskId}`);
+            if (res && res.status === 'SUCCESS') {
+                if (res.passed) {
+                    log.innerHTML += `\n[VERIFIED PASS] Computation proof match! Notes: ${res.notes}`;
+                } else {
+                    log.innerHTML += `\n[VERIFIED FRAUD] ${res.notes}\nSecurity Incident dispatched to TCB. Provider reputation slashed!`;
+                }
+                await fetchMarketplaceData();
+            } else {
+                log.innerHTML += `\n[ERROR] Verification failed. Ensure result was submitted first.`;
+            }
+        }
+
+        async function triggerTaskSettle() {
+            if (!currentWorkflowTaskId) return;
+            const log = document.getElementById('mp-wf-log');
+            log.innerHTML += `\n[SETTLEMENT] Unlocking escrow and releasing payment...`;
+            const res = await apiPost(`/api/marketplace/tasks/settle?task_id=${currentWorkflowTaskId}`);
+            if (res && res.status === 'SUCCESS') {
+                log.innerHTML += `\n[SETTLED] Payment released to provider wallet! Tx Hash: ${res.settlement_tx}`;
+                await fetchMarketplaceData();
+            } else {
+                log.innerHTML += `\n[ERROR] Settlement failed. Ensure task passed verification first.`;
+            }
+        }
+
+        // =====================================================================
+        // Post-Quantum Cryptography Operations & Telemetry
+        // =====================================================================
+
+        async function fetchPqcStatus() {
+            const data = await apiGet('/api/pqc/status');
+            if (!data) return;
+            const modeEl = document.getElementById('pqc-kpi-mode');
+            if (modeEl && data.active_crypto_mode) {
+                modeEl.textContent = `${data.active_crypto_mode} (ENFORCED)`;
+            }
+        }
+
+        async function fetchPqcBenchmark() {
+            const data = await apiGet('/api/pqc/bench');
+            if (!data) return;
+            renderPqcBenchmark(data);
+        }
+
+        function renderPqcBenchmark(b) {
+            if (!b) return;
+            if (b.ed25519 && b.ml_dsa_65) {
+                document.getElementById('bench-ed-keygen').textContent = `${b.ed25519.keygen_us.toFixed(1)} µs`;
+                document.getElementById('bench-mldsa-keygen').textContent = `${b.ml_dsa_65.keygen_us.toFixed(1)} µs`;
+                const rKeygen = (b.ml_dsa_65.keygen_us / (b.ed25519.keygen_us || 1)).toFixed(1);
+                document.getElementById('bench-ratio-keygen').textContent = `${rKeygen}x`;
+
+                document.getElementById('bench-ed-sign').textContent = `${b.ed25519.sign_us.toFixed(1)} µs`;
+                document.getElementById('bench-mldsa-sign').textContent = `${b.ml_dsa_65.sign_us.toFixed(1)} µs`;
+                const rSign = (b.ml_dsa_65.sign_us / (b.ed25519.sign_us || 1)).toFixed(1);
+                document.getElementById('bench-ratio-sign').textContent = `${rSign}x`;
+
+                document.getElementById('bench-ed-verify').textContent = `${b.ed25519.verify_us.toFixed(1)} µs`;
+                document.getElementById('bench-mldsa-verify').textContent = `${b.ml_dsa_65.verify_us.toFixed(1)} µs`;
+                const rVer = (b.ml_dsa_65.verify_us / (b.ed25519.verify_us || 1)).toFixed(1);
+                document.getElementById('bench-ratio-verify').textContent = `${rVer}x`;
+            }
+            if (b.ml_kem_768) {
+                document.getElementById('bench-kem-keygen').textContent = `${b.ml_kem_768.keygen_us.toFixed(1)} µs`;
+                document.getElementById('bench-kem-encap').textContent = `${b.ml_kem_768.encap_us.toFixed(1)} µs`;
+                document.getElementById('bench-kem-decap').textContent = `${b.ml_kem_768.decap_us.toFixed(1)} µs`;
+            }
+            if (b.hybrid_kem) {
+                document.getElementById('bench-hybrid-init').textContent = `${b.hybrid_kem.initiate_us.toFixed(1)} µs`;
+                document.getElementById('bench-hybrid-resp').textContent = `${b.hybrid_kem.respond_us.toFixed(1)} µs`;
+            }
+        }
+
+        async function runPqcDemo() {
+            const badge = document.getElementById('pqc-demo-badge');
+            const container = document.getElementById('pqc-demo-steps');
+            if (badge) {
+                badge.className = 'tag tag-warn';
+                badge.textContent = 'EXECUTING LIVE PRIMITIVES...';
+            }
+            if (container) {
+                container.innerHTML = `
+                    <div style="color: var(--accent-cyan); font-family: var(--font-mono); font-size: 12px; padding: 12px; background: rgba(57, 197, 207, 0.1); border-radius: 4px; border: 1px solid rgba(57, 197, 207, 0.3);">
+                        [>] Dispatched PQC demonstration to backend engine...<br/>
+                        [>] Generating ML-DSA-65 / ML-KEM-768 identities, evaluating hybrid signatures, establishing encrypted session, verifying unanimous consensus...
+                    </div>
+                `;
+            }
+
+            const data = await apiGet('/api/pqc/demo');
+            if (!data || !container) return;
+
+            if (badge) {
+                badge.className = data.all_passed ? 'tag tag-green' : 'tag tag-red';
+                badge.textContent = data.all_passed ? 'ALL 9 CHECKS VERIFIED' : 'ONE OR MORE FAILED';
+            }
+
+            let html = '';
+            if (data.steps) {
+                data.steps.forEach(s => {
+                    const statusClass = s.success ? 'tag-green' : 'tag-red';
+                    const icon = s.success ? '✓' : '✗';
+                    html += `
+                        <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-color); border-radius: 6px; padding: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <div style="font-weight: 600; font-size: 13px; color: #ffffff;">
+                                    <span style="color: ${s.success ? 'var(--status-ok)' : 'var(--status-error)'}; margin-right: 6px;">${icon}</span>
+                                    ${s.name}
+                                </div>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <span class="mono" style="font-size: 11px; color: var(--text-muted);">${s.elapsed_ms.toFixed(2)} ms</span>
+                                    <span class="tag ${statusClass}">${s.success ? 'PASS' : 'FAIL'}</span>
+                                </div>
+                            </div>
+                            <pre style="margin: 0; background: var(--bg-base); padding: 8px 10px; border-radius: 4px; font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary); white-space: pre-wrap; line-height: 1.4;">${s.details}</pre>
+                        </div>
+                    `;
+                });
+            }
+            container.innerHTML = html;
+
+            if (data.benchmark) {
+                renderPqcBenchmark(data.benchmark);
+            }
+        }
+
+        // Initial Load and Auto-Polling
+        fetchLiveStatus();
+        fetchMarketplaceData();
+        fetchPqcStatus();
+        fetchPqcBenchmark();
+        setInterval(() => {
+            fetchLiveStatus();
+            fetchMarketplaceData();
+            fetchPqcStatus();
+        }, 3000);
+    </script>
+</body>
+</html>
