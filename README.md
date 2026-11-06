@@ -1,575 +1,479 @@
 # SovereignChain
 
-**SovereignChain** is a C17 prototype combining a small authenticated
-peer-to-peer blockchain, a simplified two-validator DAG consensus
-mechanism, a deterministic account ledger, and a federated connector
-network for cross-chain activity and transfer coordination.
+**A modular C17 blockchain prototype with DAG-based transaction ordering, a distributed security and governance layer, and a post-quantum cryptography demonstration stack.**
 
-This repository contains two related systems:
+SovereignChain explores how a blockchain can combine deterministic transaction execution with independently verifiable security decisions. Its architecture separates the core chain, security intelligence, distributed Trusted Computing Base (TCB), operator governance, and experimental post-quantum cryptography (PQC).
 
-1.  **The chain node** --- transaction validation and gossip, DAG
-    vertices, validator voting/certification, ledger execution, and
-    persisted state.
-2.  **The connector network** --- observes transactions on Chain A and
-    Chain B, publishes a unified activity feed, coordinates transfer
-    approvals among connectors, and exposes a read-only HTTP API.
+> **Project status:** Hackathon / research prototype. The repository contains working development harnesses, test suites, a Sentinel security dashboard, and standalone PQC demonstrations. It is **not** a production blockchain, production bridge, or independently audited post-quantum network. See [Security model and limitations](#security-model-and-limitations).
 
-> **Prototype notice:** this is a local development project, not a
-> production bridge or a Byzantine-fault-tolerant blockchain. Read
-> [Security model and known
-> limitations](#security-model-and-known-limitations) before using it
-> with anything valuable.
+---
 
-## Contents
+## At a glance
 
--   [Architecture](#architecture)
--   [Repository layout](#repository-layout)
--   [Requirements](#requirements)
--   [Build](#build)
--   [Run the six-node chain harness](#run-the-six-node-chain-harness)
--   [Run the two-chain connector
-    devnet](#run-the-two-chain-connector-devnet)
--   [Make a development wallet
-    transaction](#make-a-development-wallet-transaction)
--   [Connector HTTP API](#connector-http-api)
--   [Tests](#tests)
--   [Configuration and persistence](#configuration-and-persistence)
--   [Transaction and transfer
-    lifecycle](#transaction-and-transfer-lifecycle)
--   [Troubleshooting](#troubleshooting)
--   [Development notes](#development-notes)
+| Area | What is included |
+|---|---|
+| Core implementation | C17, POSIX networking, OpenSSL |
+| Local chain harness | Six node processes on `127.0.0.1:9000–9005` |
+| Consensus prototype | DAG vertices, validator votes, certificates, deterministic commit ordering |
+| Transaction security | Ed25519 signatures, SHA-256 hashing, nonce and ledger validation |
+| Security layer | Security-agent incident recommendations and deterministic policy checks |
+| Distributed TCB | Three-peer decision workflow, independent peer DAG histories, unanimous authorization |
+| Governance | Human approval path for actions marked as requiring operator consent |
+| Sentinel | Local web control room, node telemetry, security history and PQC demo endpoints |
+| PQC modules | ML-DSA-65, ML-KEM-768, hybrid signatures/key establishment, AES-256-GCM session protection |
+| Additional module | Post-quantum signed decentralized-compute marketplace records and agreements |
+
+## Table of contents
+
+- [Architecture](#architecture)
+- [Core blockchain](#core-blockchain)
+- [Security intelligence and distributed TCB](#security-intelligence-and-distributed-tcb)
+- [Post-quantum cryptography](#post-quantum-cryptography)
+- [Sentinel control room](#sentinel-control-room)
+- [Repository layout](#repository-layout)
+- [Requirements](#requirements)
+- [Build](#build)
+- [Run the six-node local network](#run-the-six-node-local-network)
+- [Run the PQC demonstration](#run-the-pqc-demonstration)
+- [Run the Sentinel control room](#run-the-sentinel-control-room)
+- [Run tests](#run-tests)
+- [Security model and limitations](#security-model-and-limitations)
+- [Development and contribution notes](#development-and-contribution-notes)
+
+---
 
 ## Architecture
 
-### Chain node
+SovereignChain is organized into three logical layers.
 
-The chain implementation is written in C17 and uses POSIX networking and
-OpenSSL. Its major subsystems are:
+```text
+┌─────────────────────────────────────────────────────────────────────┐
+│                  LAYER 3 — APPLICATIONS & SERVICES                   │
+│                                                                     │
+│  Sentinel Control Room  •  Computing Marketplace  •  Client Tools   │
+│  Cross-chain connector prototype  •  Future application modules    │
+└──────────────────────────────────┬──────────────────────────────────┘
+                                   │ telemetry / requests / records
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│              LAYER 2 — SECURITY, INTELLIGENCE & GOVERNANCE          │
+│                                                                     │
+│  Security Agent → Deterministic TCB Policy → TCB Peer Decisions    │
+│                                      │                              │
+│                         Unanimous authorization                     │
+│                                      │                              │
+│                         Human governance escalation                 │
+│                                                                     │
+│  Independent TCB DAG histories and auditable security events       │
+└──────────────────────────────────┬──────────────────────────────────┘
+                                   │ bounded, authorized actions
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                    LAYER 1 — CORE BLOCKCHAIN                         │
+│                                                                     │
+│  Authenticated P2P Networking • Transactions • Mempool              │
+│  DAG Vertices • Validator Voting • Certificates • Account Ledger   │
+│  Deterministic Ordering • Persistent State                          │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
--   **Configuration and process lifecycle:** loads network and per-node
-    configuration, checks the configured topology, and handles shutdown.
--   **Networking:** framed TCP messages, a `poll()`-based event loop,
-    peer reconnection, and transaction/vertex/vote propagation.
--   **Cryptography:** Ed25519 signatures and SHA-256 hashing through
-    OpenSSL.
--   **Transactions and mempool:** transaction serialization and
-    signature checks, validation, deduplication, batching, and gossip.
--   **DAG:** creates, validates, hashes, stores, and references
-    vertices.
--   **SPD consensus prototype:** two-validator certification,
-    alternating anchors, equivocation checks, and deterministic
-    ordering.
--   **Ledger:** deterministic account-state updates, balances, nonces,
-    fees, and state-root hashing.
--   **Persistence:** checksummed state snapshots and crash-recovery
-    support.
--   **Security Subsystem & Distributed TCB Network:** multi-peer independent
-    DAG consensus, deterministic policy enforcement, AI security agent telemetry,
-    and human operator governance escalation (see [Distributed TCB Protocol](docs/DISTRIBUTED_TCB_PROTOCOL.md)
-    and [Strategic Integration Vision](docs/SOVEREIGNCHAIN_STRATEGIC_INTEGRATION_VISION.md)).
--   **Sentinel Security Control Room:** local node metrics, TCB approval
-    demonstrations, bounded recovery checks, and persistent signed TCB
-    DAG snapshots (see [Sentinel Operations](docs/SENTINEL_OPERATIONS.md)).
+The central design principle is **separation of authority**:
 
-The root `config/` is the six-node harness described in the existing
-project docs: two validator roles and four normal-node identities. The
-local launcher starts six processes on the configured localhost ports.
+- The core chain validates and executes deterministic state transitions.
+- A security agent can analyze telemetry and recommend a bounded action.
+- The deterministic policy engine checks whether the request is permitted.
+- TCB peers independently evaluate the request and exchange signed decisions.
+- Actions requiring human governance remain pending until an operator resolves them.
 
-### Connector network
+The security agent is not intended to have unrestricted authority over the blockchain node.
 
-The connector is a separate process and has its own connector identity,
-peer network, persistent records, transfer state, exchange-rate
-configuration, and HTTP API. In the supplied devnet configuration, three
-connectors form a network with a quorum threshold of two.
+## Core blockchain
 
-Each connector connects to one configured node endpoint on Chain A and
-one on Chain B. It observes chain transactions, verifies transaction
-signatures, creates signed activity records, shares records with its
-connector peers, and identifies transactions addressed to a configured
-bridge escrow key as cross-chain transfer candidates.
+The chain implementation is written in **C17**.
 
-The connector API is **read-only**: it reports status, topology,
-activity, transfers, and configured rates. It is not a public
-transaction-submission API.
+### Network
 
-### Cross-chain model
+- Six local node identities are defined in `config/network.conf`.
+- The supplied local harness starts six processes on ports `9000` through `9005`.
+- The configured topology contains two validator identities and four normal-node identities.
+- Nodes communicate over framed TCP messages and authenticate peers using pinned Ed25519 public keys.
+- The event loop uses `poll()` to handle network activity.
 
-The documented model is escrow-based:
+The included launcher is a **single-machine development harness**. Six localhost processes demonstrate multi-process networking; they do not constitute six independently operated or geographically distributed machines.
 
-1.  A user sends an ordinary transaction on the source chain to that
-    chain's configured bridge escrow public key.
-2.  Connectors detect the transaction and derive a deterministic
-    transfer ID from the source chain and source transaction hash.
-3.  Connectors calculate the destination amount using the frozen integer
-    exchange-rate ratio and exchange signed transfer votes.
-4.  A transfer is approved when the configured connector quorum is
-    reached.
-5.  The connector implementation can submit a corresponding transaction
-    to the destination chain.
+### Transaction and ledger flow
 
-**Important:** connector quorum approval, destination transaction
-submission, destination-chain consensus finality, and successful
-recipient credit are different events. The current source has
-implementation gaps around destination-recipient selection and
-completion tracking; see [Security model and known
-limitations](#security-model-and-known-limitations). Do not interpret a
-transfer's `COMPLETED` label as proof of a correct end-to-end transfer
-until those gaps have been fixed and tested.
+At a high level:
+
+1. A transaction is created and signed by its sender.
+2. A node validates the transaction and its signature before admitting it to the mempool.
+3. Transactions are propagated to connected peers.
+4. Validators create DAG vertices containing batches of pending transactions.
+5. Validators exchange votes; valid votes contribute to a certificate.
+6. The consensus component evaluates certificates and commit eligibility.
+7. The ledger applies committed transactions in deterministic order and persists state.
+
+The implementation includes transaction serialization, signature verification, duplicate handling, account balances, sequential nonces, fees, and persistent state snapshots.
+
+### DAG and consensus prototype
+
+The consensus implementation includes:
+
+- DAG vertex creation and parent references;
+- vertex hashing and signature verification;
+- validator voting and certificate collection;
+- alternating validator anchors;
+- equivocation checks for conflicting validator activity;
+- deterministic ordering for commit evaluation.
+
+The supplied configuration is a two-validator development topology. It should not be described as a general Byzantine-fault-tolerant consensus protocol: a two-validator, 2-of-2 arrangement has no tolerance for a Byzantine validator and can lose liveness when either validator is unavailable.
+
+## Security intelligence and distributed TCB
+
+The security subsystem is designed around the principle:
+
+**Agent recommends → policy evaluates → TCB peers decide → authorized component applies.**
+
+### Security agent
+
+The security-agent subsystem works with structured telemetry and incident records. It can produce bounded action recommendations rather than directly issuing arbitrary operating-system commands.
+
+### Deterministic policy engine
+
+The TCB policy layer evaluates action requests against deterministic rules and classifies actions, including actions that require human approval. A model or agent recommendation is not, by itself, authorization.
+
+### Distributed TCB
+
+The Sentinel implementation maintains three TCB peer instances, each with its own identity and DAG history. The workflow includes:
+
+- signed action requests and peer decisions;
+- independent policy evaluation;
+- rejection when a peer dissents;
+- unanimous approval for automatic authorization;
+- pending status when a required peer is unavailable;
+- escalation to a human operator for governance-sensitive actions;
+- persistent and auditable peer history.
+
+The TCB's unanimous rule intentionally favors safety over liveness: one unavailable peer can prevent an authorization from completing.
+
+## Post-quantum cryptography
+
+The repository includes a separate PQC module built on **liboqs** and **OpenSSL**. It provides cryptographic building blocks and a dedicated demonstration/test path.
+
+### Algorithms represented
+
+| Primitive | Standard / specification | Intended role |
+|---|---|---|
+| ML-DSA-65 | NIST FIPS 204 | Post-quantum digital signatures |
+| ML-KEM-768 | NIST FIPS 203 | Post-quantum key encapsulation |
+| Ed25519 | RFC 8032 | Classical signature component in hybrid mode |
+| X25519 | RFC 7748 | Classical component in hybrid key establishment |
+| HKDF-SHA-256 / HMAC-SHA-256 | RFC 5869 / RFC 2104 | Key derivation and session authentication |
+| AES-256-GCM | NIST SP 800-38D | Authenticated session encryption |
+| SHA-256 | FIPS 180-4 | Hashing and integrity identifiers |
+
+### Cryptographic policy modes
+
+The PQC module defines three policies:
+
+- `CLASSICAL_ONLY`: classical Ed25519 verification. This mode is not post-quantum secure.
+- `HYBRID`: both Ed25519 and ML-DSA-65 signatures are required for the relevant PQC-module operation.
+- `PQC_REQUIRED`: ML-DSA-65 is required without the classical signature component.
+
+The hybrid key-establishment module combines ML-KEM-768 and X25519 shared secrets through a key-derivation step. The session module provides AES-256-GCM encryption and authenticated message handling.
+
+### Important integration boundary
+
+The PQC code is compiled into the project executables and exercised by the dedicated PQC unit tests, demonstration, and Sentinel endpoints. However, the ordinary chain-node networking and consensus paths in `src/net.c`, `src/main.c`, and `src/consensus.c` do not currently call the PQC session or PQC transaction APIs. Therefore, **the six-node chain harness should not be represented as already running end-to-end post-quantum-protected consensus or transport**.
+
+The PQC demonstration validates the PQC module's own operations; it does not prove that every live chain transaction, peer handshake, or consensus message uses those algorithms.
+
+For the detailed module design, see [`docs/POST_QUANTUM_CRYPTOGRAPHY_ARCHITECTURE.md`](docs/POST_QUANTUM_CRYPTOGRAPHY_ARCHITECTURE.md).
+
+## Sentinel control room
+
+Sentinel is the local security operations dashboard and HTTP service.
+
+It brings together:
+
+- node telemetry and network status;
+- security incidents and action requests;
+- TCB decision and governance workflows;
+- security history and peer-DAG integrity inspection;
+- PQC status, benchmark, and demonstration endpoints.
+
+### Start Sentinel
+
+From the repository root, after building:
+
+```bash
+./bin/sentinel_server --port 8088 --web-root . --state-dir sentinel-state
+```
+
+Open:
+
+```text
+http://127.0.0.1:8088/
+```
+
+Sentinel binds to loopback by default. Keep it local unless a separately reviewed authentication and deployment layer has been added.
+
+The server accepts optional arguments:
+
+```text
+--port <port>             HTTP port (default: 8088)
+--network <file>          Node topology configuration
+--web-root <directory>    Directory containing index.html
+--state-dir <directory>   Persistent Sentinel state directory
+```
+
+The implementation's default network-config path is `config/nodes.conf`; this archive's six-node harness uses `config/network.conf`. If you want Sentinel to poll that topology, pass the correct file explicitly:
+
+```bash
+./bin/sentinel_server \
+  --port 8088 \
+  --network config/network.conf \
+  --web-root . \
+  --state-dir sentinel-state
+```
+
+### Selected API endpoints
+
+The local Sentinel service includes endpoints for status, node/network information, security history, TCB peer DAG history, and PQC demonstration data. The PQC integration test probes:
+
+```text
+GET /api/pqc/status
+GET /api/pqc/bench
+GET /api/pqc/demo
+```
+
+The service is intended for local demonstration and operator interaction, not direct exposure to the public internet.
 
 ## Repository layout
 
-``` text
+```text
 .
-├── Makefile                    # Chain build and test targets
-├── config/                     # Six-node chain harness configuration
+├── index.html                 # Sentinel dashboard frontend
+├── Makefile                   # Main build and test targets
+├── config/                    # Six-node network and per-node configs
 ├── src/
-│   ├── main.c                  # Chain-node event loop and callbacks
-│   ├── config.*                # Configuration loading/validation
-│   ├── net.*                   # TCP peer networking and framing
-│   ├── crypto.*                # Ed25519 and SHA-256 helpers
-│   ├── tx.*                    # Transaction representation/serialization
-│   ├── mempool.*               # Transaction validation, batching, deduplication
-│   ├── dag.*                   # DAG vertex representation and storage
-│   ├── consensus.*             # Validator voting and certification
-│   ├── ledger.*                # Deterministic account ledger
-│   ├── storage.*               # Persistent chain state
-│   ├── security/               # Telemetry, incident detection, node guard
-│   └── tcb/                    # Distributed TCB consensus, DAG, policy engine
+│   ├── main.c                 # Chain-node process and event loop
+│   ├── config.*               # Configuration loading and validation
+│   ├── net.*                  # P2P transport and peer authentication
+│   ├── crypto.*               # Classical cryptographic helpers
+│   ├── tx.*                   # Transaction representation and validation
+│   ├── mempool.*              # Transaction admission and batching
+│   ├── dag.*                  # DAG vertex handling
+│   ├── consensus.*             # Validator voting and commit evaluation
+│   ├── ledger.*               # Deterministic account ledger
+│   ├── storage.*              # Persistent chain state
+│   ├── security/              # Security incidents, agent, node guard
+│   ├── tcb/                   # TCB decisions, policy, peer and DAG logic
+│   └── pqc/                   # PQC primitives, sessions, transactions, demo
 ├── tests/
-│   ├── unit/                   # Chain unit tests
-│   └── integration/            # Multi-process integration tests
+│   ├── unit/                  # Unit tests
+│   └── integration/           # Multi-process and feature integration tests
 ├── scripts/
-│   ├── run_local.sh            # Start the six-node local harness
-│   ├── devnet_setup.sh         # Generate fresh devnet keys/configuration
-│   ├── devnet.sh               # Start/stop/status/wallet commands
-│   ├── test_devnet.sh          # Connector devnet smoke checks
-│   └── keygen.sh               # Key-generation helper
-├── docs/DEVNET.md              # Existing two-chain devnet notes
-└── connector/
-    ├── Makefile                # Connector build and tests
-    ├── src/                    # Connector networking, chain client, transfer/API code
-    ├── config/                 # Example connector configurations
-    ├── docs/
-    │   ├── ARCHITECTURE.md     # Connector architecture notes
-    │   └── HTTP_API.md         # API endpoint reference
-    ├── tests/                  # Connector unit tests and HTTP smoke test
-    └── scripts/keygen.sh       # Connector key helper
+│   ├── keygen.sh              # Generate six Ed25519 node keypairs
+│   └── run_local.sh           # Launch six local chain processes
+├── docs/
+│   ├── DEVNET.md
+│   ├── DISTRIBUTED_TCB_PROTOCOL.md
+│   ├── POST_QUANTUM_CRYPTOGRAPHY_ARCHITECTURE.md
+│   ├── SENTINEL_OPERATIONS.md
+│   └── SOVEREIGNCHAIN_STRATEGIC_INTEGRATION_VISION.md
+├── connector/                 # Separate two-chain connector prototype
+└── liboqs/                    # Open Quantum Safe source tree included in archive
 ```
 
-The archive also contains `bin/`, `connector/bin/`, and `devnet/`
-runtime artifacts from a previous local run. The `devnet/` directory
-contains private keys, state files, logs, and process metadata; treat
-those keys as development-only and regenerate them before a fresh run.
-The supplied archive does **not** contain a standalone
-HTML/CSS/JavaScript dashboard, despite the API being suitable for a
-local UI.
+The `connector/` directory contains a separate cross-chain connector prototype with its own Makefile, source, tests, and documentation. It is not required to run the six-node chain harness or the PQC demo described above. Consult its own documentation before using it.
 
 ## Requirements
 
-The documented build environment is Linux or WSL with:
+The main project targets Linux. Windows users can use WSL2 with an Ubuntu distribution.
 
--   GCC or Clang with C17 support
--   GNU Make
--   OpenSSL development headers and libraries
--   `pkg-config` (recommended; the Makefiles fall back to
-    `-lssl -lcrypto`)
--   `bash`
--   Python 3, `curl`, `openssl`, and `od` for devnet scripts/tests
--   `xxd` for the root key-generation helper, if used
+Required tools and libraries:
 
-On Debian/Ubuntu/WSL, install the main dependencies with:
+- GCC or Clang with C17 support;
+- GNU Make;
+- OpenSSL 3.x development headers and libraries;
+- `pkg-config`;
+- liboqs with ML-DSA-65 and ML-KEM-768 support;
+- Bash;
+- Python 3 and `curl` for selected scripts and integration tests.
 
-``` bash
+On Ubuntu / Debian / WSL, install the common system packages:
+
+```bash
 sudo apt update
-sudo apt install build-essential libssl-dev pkg-config python3 curl openssl
+sudo apt install build-essential cmake ninja-build libssl-dev pkg-config \
+  python3 curl openssl xxd
 ```
 
-If a script reports a missing utility, install that utility using your
-distribution's package manager.
+Install or build a compatible liboqs release that exposes `liboqs` through `pkg-config` (or is otherwise available to the compiler and linker). The repository Makefile looks up liboqs using `pkg-config` and otherwise falls back to `-loqs`; it does not automatically build and install the bundled `liboqs/` source tree.
+
+Check that the dependency is discoverable before building:
+
+```bash
+pkg-config --modversion openssl
+pkg-config --modversion liboqs
+```
 
 ## Build
 
-Run these commands from the repository root:
+From the repository root:
 
-``` bash
+```bash
 make
+```
+
+The main Makefile builds:
+
+| Binary | Purpose |
+|---|---|
+| `bin/node` | Blockchain node |
+| `bin/injector` | Transaction / network test utility |
+| `bin/sec_agent` | Security-agent executable |
+| `bin/tcb_peer` | TCB peer executable |
+| `bin/sentinel_server` | Sentinel HTTP service and dashboard backend |
+| `bin/pqc_demo` | Standalone PQC demonstration |
+
+The build uses C17 and warning flags. Sanitizer flags are enabled for unit-test builds when supported by the compiler.
+
+To build the separate connector component:
+
+```bash
 make -C connector
 ```
 
-The root build produces:
+## Run the six-node local network
 
--   `bin/node`
--   `bin/injector`
+The supplied configuration describes six localhost processes on ports `9000–9005`.
 
-The connector build produces:
+The archive contains development key files and matching public-key configuration. **Do not reuse those private keys outside a disposable local demonstration.** For a fresh setup, generate new keys:
 
--   `connector/bin/connector`
--   `connector/bin/sc_wallet`
+```bash
+bash scripts/keygen.sh
+```
 
-The Makefiles use C17 and compile with `-Wall -Wextra -Werror`.
-Unit-test builds enable AddressSanitizer and UndefinedBehaviorSanitizer
-when the compiler supports them.
+The script creates `keys/node0.key` through `keys/node5.key` and prints the corresponding public-key lines. Replace the node entries in `config/network.conf` with the newly printed lines so that the public keys match the new private keys.
 
-## Run the six-node chain harness
+Then build and start the network:
 
-Build the chain binaries, then run:
-
-``` bash
+```bash
+make
 ./scripts/run_local.sh
 ```
 
-This starts six local node processes using `config/network.conf` and
-`config/node_0.conf` through `config/node_5.conf`. Logs are written to
-`logs/node_<id>.log`. Press **Ctrl-C** to request shutdown.
+The launcher writes node logs to:
 
-This harness is distinct from the two-chain connector devnet described
-below. It is useful for exercising the chain-node network and consensus
-components in isolation.
-
-## Run the two-chain connector devnet
-
-### 1. Build both components
-
-``` bash
-make
-make -C connector
+```text
+logs/node_0.log
+logs/node_1.log
+...
+logs/node_5.log
 ```
 
-### 2. Generate fresh development configuration
+Press `Ctrl-C` to stop the local processes.
 
-``` bash
-bash scripts/devnet_setup.sh
+This harness is intended for local development and demonstration. It is not a production deployment guide.
+
+## Run the PQC demonstration
+
+Build and run the dedicated demonstration:
+
+```bash
+make bin/pqc_demo
+./bin/pqc_demo
 ```
 
-The script creates `devnet/` with fresh Ed25519 keys, chain and
-connector configurations, storage directories, and public-key listings.
-If `devnet/` already exists, the script refuses to overwrite it. To
-deliberately regenerate the devnet:
+The demonstration exercises a sequence of PQC operations, including identity generation, hybrid transaction signing and verification, tamper detection, hybrid key establishment, encrypted session communication, TCB-related PQC signatures, and marketplace-related signed records.
 
-``` bash
-bash scripts/devnet_setup.sh --force
+Run the PQC unit test directly:
+
+```bash
+make build/test_pqc
+./build/test_pqc
 ```
 
-**Warning:** `--force` deletes the existing `devnet/` directory,
-including its keys and chain data. Stop running devnet processes first
-and back up anything you need.
+Or use the dedicated Make target:
 
-### 3. Start the devnet
-
-``` bash
-./scripts/devnet.sh start
-./scripts/devnet.sh status
+```bash
+make test-pqc
 ```
 
-The supplied scripts configure this local topology:
+## Run tests
 
-  Component                    Count Default ports
-  -------------------------- ------- -------------------------
-  Chain A validators               2 `127.0.0.1:9000–9001`
-  Chain B validators               2 `127.0.0.1:19000–19001`
-  Connector peer listeners         3 `127.0.0.1:8000–8002`
-  Connector HTTP APIs              3 `127.0.0.1:8080–8082`
+### Unit tests
 
-The scripts start seven processes in total: two validators for each
-chain and three connectors. The four additional configured node
-identities per chain are pinned identities used for connector/wallet
-authentication in this devnet setup; the devnet script does not start
-those as full chain-node processes.
-
-The HTTP API's allowed CORS origin defaults to `null`, intended for a
-page opened using `file://`. If a local page is served from an HTTP
-origin, set `UI_ORIGIN` to that exact origin when starting the devnet,
-for example:
-
-``` bash
-UI_ORIGIN=http://127.0.0.1:5500 ./scripts/devnet.sh start
-```
-
-Stop the devnet with:
-
-``` bash
-./scripts/devnet.sh stop
-```
-
-Check `devnet/logs/` if a process does not start. Do not commit
-generated private keys or use them outside local development.
-
-## Make a development wallet transaction
-
-The `devnet.sh wallet` helper uses the development wallet key generated
-for the chosen chain:
-
-``` bash
-# Ordinary transaction on Chain A to a recipient public key (64 hex characters)
-./scripts/devnet.sh wallet a <recipient_pubkey_hex> 100
-
-# Ordinary transaction on Chain B
-./scripts/devnet.sh wallet b <recipient_pubkey_hex> 250
-
-# Send to the configured bridge escrow to create a cross-chain candidate
-./scripts/devnet.sh wallet a bridge 1000
-```
-
-The optional fifth argument is the fee; the script defaults it to `1`.
-The helper tracks its development wallet nonce under `devnet/run/`. The
-`bridge` keyword substitutes the configured bridge escrow public key for
-the selected source chain.
-
-These are development commands. Before testing a bridge transfer, ensure
-the network is freshly configured and running, record the
-source/destination state, and verify the destination recipient and
-balances independently. A connector activity record or a quorum-approved
-transfer alone is not evidence that the recipient was correctly
-credited.
-
-## Connector HTTP API
-
-Each connector exposes its own read-only API when started with the HTTP
-listener enabled. The devnet launcher enables it on ports `8080`,
-`8081`, and `8082`.
-
-Example requests:
-
-``` bash
-curl -s http://127.0.0.1:8080/api/status
-curl -s http://127.0.0.1:8080/api/topology
-curl -s 'http://127.0.0.1:8080/api/activity?limit=50'
-curl -s http://127.0.0.1:8080/api/transfers
-curl -s http://127.0.0.1:8080/api/rates
-```
-
-The documented endpoints are:
-
-  ------------------------------------------------------------------------
-  Endpoint                             Purpose
-  ------------------------------------ -----------------------------------
-  `GET /api/status`                    Connector identity, quorum, chain
-                                       connection state, peer
-                                       connectivity, activity and transfer
-                                       counts
-
-  `GET /api/topology`                  Configured nodes and links; a link
-                                       is live only when the corresponding
-                                       authenticated connection is live
-
-  `GET /api/activity`                  Paginated activity feed; supports
-                                       chain, type, status, sequence
-                                       cursor, and limit filters
-
-  `GET /api/activity/{record_id}`      Fetch one activity record by
-                                       64-character hexadecimal record ID
-
-  `GET /api/transfers`                 Paginated transfer list; supports
-                                       state, source-chain, offset, and
-                                       limit filters
-
-  `GET /api/transfers/{transfer_id}`   Fetch one transfer by 64-character
-                                       hexadecimal transfer ID
-
-  `GET /api/rates`                     Current A-to-B and B-to-A rational
-                                       rates and their signature/validity
-                                       metadata
-  ------------------------------------------------------------------------
-
-Full query parameters and response semantics are documented in
-[`connector/docs/HTTP_API.md`](connector/docs/HTTP_API.md).
-
-Security behavior documented in the API implementation:
-
--   The HTTP API accepts `GET` and `OPTIONS`; state-changing methods are
-    rejected.
--   It binds to loopback by default.
--   A loopback request with an unexpected `Host` header is rejected as a
-    DNS-rebinding guard.
--   CORS echoes only the configured exact origin; wildcards are
-    rejected.
--   Non-loopback binding has no API authentication and should not be
-    exposed to an untrusted network.
-
-Large numeric values are represented as decimal strings in JSON to avoid
-precision loss in clients that use IEEE-754 numbers. The activity
-record's reporter signature validates the reporting connector's
-attestation and record-ID derivation; it is **not** itself proof of
-source-chain finality.
-
-## Tests
-
-### Chain unit tests
-
-``` bash
+```bash
 make test-unit
 ```
 
-### Chain integration tests
+### Integration tests
 
-``` bash
+```bash
 make test-integration
 ```
 
-The integration target runs the phase scripts in `tests/integration/`.
-They start real local processes and exercise configuration,
-authenticated networking, transaction propagation, DAG/consensus,
-execution, persistence, and adversarial cases as represented by the
-tests.
+The integration target runs the phase scripts and the security, Sentinel, and PQC integration checks. These tests launch local processes and may create logs or local state.
 
-### Run both chain test groups
+### Full main test target
 
-``` bash
+```bash
 make test
 ```
 
-### Connector unit tests
+### PQC-specific verification
 
-``` bash
-make -C connector test
+```bash
+make test-pqc
 ```
 
-### Connector/devnet smoke test
+The PQC integration script also starts a temporary Sentinel server and probes the PQC HTTP endpoints:
 
-``` bash
-bash scripts/test_devnet.sh
+```bash
+bash tests/integration/test_pqc_integration.sh
 ```
 
-**Caution:** the devnet smoke script regenerates `devnet/` with
-`--force` and then starts/stops processes. It deletes the existing
-devnet keys and chain data. Do not run it against data you need to keep.
+Some test and development scripts create or regenerate local state. Review a script before running it against data you need to preserve.
 
-The supplied smoke test checks process startup, connector connectivity,
-topology links, activity observation/signatures, ordinary transaction
-isolation, and transfer quorum approval. It does **not** establish
-correct destination-recipient credit or independently prove
-destination-chain finality.
+## Security model and limitations
 
-## Configuration and persistence
+SovereignChain is an experimental prototype. It must not be used to custody real assets, store production secrets, or secure production infrastructure.
 
-### Chain configuration
+Known boundaries include:
 
--   `config/network.conf` defines the network's pinned node identities
-    and endpoints.
--   `config/node_<id>.conf` sets each node's ID, private-key path, and
-    data directory.
--   The devnet setup script generates separate files under
-    `devnet/chain_a/` and `devnet/chain_b/`.
+1. **Consensus scope:** the included six-node topology has two validators and a 2-of-2 certification model. It does not tolerate a Byzantine validator and can lose liveness if either validator is unavailable.
+2. **Local harness:** all six node processes run on one machine and share the host's operational trust boundary.
+3. **PQC integration:** PQC primitives and demonstrations exist, but the ordinary node networking and consensus paths are not yet wired to use the PQC session and transaction APIs end to end.
+4. **TCB liveness:** unanimous authorization means a missing peer can leave a request pending. This is a deliberate safety-over-liveness trade-off.
+5. **Human governance:** actions classified as human-required need an operator decision; automated agent output is not sufficient authority.
+6. **Sentinel exposure:** Sentinel is designed for loopback use. Its operator endpoints are not intended to be exposed publicly without authentication, authorization, transport security, and deployment hardening.
+7. **Key management:** development private keys must be regenerated and protected. Never commit private keys, generated state, or secrets.
+8. **Marketplace scope:** the PQC marketplace module signs registration, agreement, result, and settlement records; actual compute workloads are off-chain and are not executed by blockchain consensus.
+9. **Connector scope:** the separate connector devnet is a prototype. Connector quorum approval must not be treated as proof of correct destination-chain execution or finality. Review `docs/DEVNET.md` and connector documentation for known gaps.
 
-### Connector configuration
+The repository's design documents describe intended architecture as well as implemented modules. Where a design document describes a future integration or broader security guarantee, verify the corresponding code path and tests before treating it as an implemented property.
 
--   `connector/config/connector*.conf` are example connector configs.
--   `devnet/connectors/connector*.conf` are generated for the local
-    two-chain environment.
--   Connector config includes connector identity/key path, persistent
-    data directory, peer endpoints and public keys, chain endpoints and
-    pinned public keys, bridge escrow public keys, quorum, and rational
-    exchange-rate values.
+## Development and contribution notes
 
-Prefer `scripts/devnet_setup.sh` to create fresh, internally consistent
-development configuration instead of editing generated keys and public
-keys manually.
+- Keep consensus and ledger state transitions deterministic.
+- Keep AI or heuristic recommendations outside the core consensus execution path.
+- Require explicit policy checks and authorization for security actions.
+- Use domain-separated canonical payloads for signatures.
+- Add tests for both successful and rejected paths, including tampered messages and missing peer responses.
+- Do not commit private keys, local state directories, logs, or generated binaries.
+- Update the relevant architecture and operations documentation whenever behavior changes.
 
-### Data files
+## Further documentation
 
-Connector storage uses the configured `data_dir`. The architecture notes
-describe:
+- [Distributed TCB Protocol](docs/DISTRIBUTED_TCB_PROTOCOL.md)
+- [Post-Quantum Cryptography Architecture](docs/POST_QUANTUM_CRYPTOGRAPHY_ARCHITECTURE.md)
+- [Sentinel Operations](docs/SENTINEL_OPERATIONS.md)
+- [Two-chain Devnet Notes](docs/DEVNET.md)
+- [Strategic Integration Vision](docs/SOVEREIGNCHAIN_STRATEGIC_INTEGRATION_VISION.md)
 
--   `activity.dat` --- persisted activity records
--   `seen_ids.dat` --- deduplication index for record IDs
--   `transfers.dat` --- persisted transfer state
--   `rates.dat` --- persisted exchange rates
+---
 
-The devnet also creates chain node state directories and logs. Keep
-generated state separate from source-controlled configuration. Back up
-data before manually deleting it or regenerating the devnet.
-
-## Transaction and transfer lifecycle
-
-### Same-chain transaction
-
-1.  A wallet signs a transaction with its Ed25519 key.
-2.  The transaction is submitted to a chain node.
-3.  The node validates and adds it to the mempool.
-4.  Nodes gossip the transaction.
-5.  Validators propose DAG vertices containing batches of pending
-    transactions and exchange votes/certificates according to the
-    consensus implementation.
-6.  The ledger executes committed transactions in deterministic order
-    and persists state.
-
-### Cross-chain transfer (intended flow)
-
-1.  A source-chain transaction sends value to the source chain's
-    configured escrow public key.
-2.  Connectors observe the transaction and classify it as a cross-chain
-    candidate.
-3.  A deterministic transfer ID is derived from the source chain and
-    source transaction hash.
-4.  Connectors calculate the destination amount using the transfer's
-    recorded integer rate ratio.
-5.  Connectors exchange signatures over transfer data; distinct valid
-    peer signatures count toward the configured quorum.
-6.  The transfer is marked approved when quorum is reached.
-7.  A connector submits a destination-chain credit transaction.
-8.  The destination transaction must be included in a destination-chain
-    certificate/commit before the transfer can be treated as executed.
-
-Steps 7--8 require the correctness conditions described below; the
-current source does not yet enforce them safely.
-
-
-## Troubleshooting
-
-**`bin/node` or `connector/bin/connector` is missing**
-
-``` bash
-make
-make -C connector
-```
-
-**The devnet setup script says `devnet/` already exists**
-
-Stop the processes first. If you are sure the existing keys/data can be
-deleted, regenerate with:
-
-``` bash
-bash scripts/devnet_setup.sh --force
-```
-
-**A process is down or a port is already in use**
-
-``` bash
-./scripts/devnet.sh status
-tail -n 100 devnet/logs/chain_a_node0.log
-tail -n 100 devnet/logs/connector0.log
-```
-
-Change the generated configuration only if you also keep all
-corresponding endpoints and pinned keys consistent.
-
-**Connector HTTP requests fail**
-
-Check `./scripts/devnet.sh status`, the connector log, the HTTP port,
-and `--http-origin`/`UI_ORIGIN`. A `file://` page sends the origin
-`null`; a page served over HTTP needs its exact origin configured.
-
-**A transfer appears approved but balances do not reflect the intended
-transfer**
-
-Approval means connector quorum, not successful destination execution.
-Inspect the transfer record, destination transaction hash, destination
-chain logs/state, and recipient key. See [Cross-chain correctness
-gaps](#cross-chain-correctness-gaps-found-in-this-archive).
-
-## Development notes
-
--   Keep changes small and run the relevant unit and integration tests
-    after modifying protocol or storage code.
--   When changing serialized structs or on-disk formats, account for
-    compatibility with existing devnet state; use a fresh devnet for
-    tests that require clean state.
--   Do not treat successful compilation or a smoke test as proof of
-    end-to-end bridge correctness.
--   Update `connector/docs/HTTP_API.md`,
-    `connector/docs/ARCHITECTURE.md`, and `docs/DEVNET.md` when behavior
-    changes, and make sure those docs agree with the source and tests.
--   Before publishing a ZIP, exclude generated private keys, state
-    files, logs, PIDs, and build artifacts. Include source,
-    configuration templates, scripts, tests, and documentation instead.
-
+**SovereignChain — deterministic execution, verifiable security decisions, and an experimental path toward post-quantum infrastructure.**
